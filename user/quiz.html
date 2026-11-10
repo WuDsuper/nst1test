@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>แบบทดสอบ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="../assets/css/style.css" rel="stylesheet">
+  <script src="../assets/js/theme.js"></script>
+</head>
+<body data-root="../">
+  <!-- แถบบนขณะทำข้อสอบ -->
+  <div class="quiz-top d-none" id="quizTop">
+    <div class="container py-2 d-flex align-items-center gap-3" style="max-width:860px">
+      <div class="min-w-0 flex-grow-1">
+        <div class="fw-semibold text-truncate" id="topTitle"></div>
+        <div class="d-flex align-items-center gap-2 small text-muted">
+          <span>ตอบแล้ว <b id="answered">0</b>/<span id="totalQ"></span></span>
+          <div class="flex-grow-1" style="max-width:200px" id="topBar"></div>
+        </div>
+      </div>
+      <div class="quiz-timer d-none" id="timer"><i class="bi bi-stopwatch me-1"></i><span id="timeLeft"></span></div>
+    </div>
+  </div>
+
+  <main class="container py-4" style="max-width:860px">
+    <div id="loading"><div class="skeleton" style="height:300px;border-radius:18px"></div></div>
+
+    <!-- หน้าแนะนำ -->
+    <section id="intro" class="d-none fade-up">
+      <a href="#" class="small text-decoration-none" id="backLink"><i class="bi bi-arrow-left me-1"></i>กลับไปหน้าโครงการ</a>
+      <div class="card mt-3">
+        <div class="card-body p-4 p-md-5">
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <span class="act-icon lg soft-purple"><i class="bi bi-ui-checks"></i></span>
+            <div class="min-w-0"><div class="small text-muted" id="iKind"></div><h1 class="h3 mb-0" id="iTitle"></h1><div class="small text-muted" id="iProject"></div></div>
+          </div>
+          <p class="prose text-muted" id="iDesc"></p>
+          <div class="row g-2 mb-4" id="iInfo"></div>
+          <div id="iAttempts"></div>
+          <div id="iAction"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ทำข้อสอบ -->
+    <section id="taking" class="d-none">
+      <div id="questions"></div>
+      <div class="card">
+        <div class="card-body d-flex flex-wrap align-items-center gap-3">
+          <div class="q-nav flex-grow-1" id="qNav"></div>
+          <button class="btn btn-primary btn-lg" id="submitBtn"><i class="bi bi-send me-1"></i>ส่งคำตอบ</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ผลลัพธ์ -->
+    <section id="result" class="d-none fade-up">
+      <div class="card mb-3">
+        <div class="card-body p-4 p-md-5 text-center" id="resBox"></div>
+      </div>
+      <div id="review"></div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/mock.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/projects.js"></script>
+  <script>
+    const me = Auth.require();
+    const id = UI.qs('id');
+    let act = null, attempt = null, answers = {}, timerId = null, offset = 0, submitting = false;
+    const show = sec => ['loading', 'intro', 'taking', 'result'].forEach(s => UI.$('#' + s).classList.toggle('d-none', s !== sec));
+    const draftKey = () => 'tms_quiz_' + (attempt && attempt.attempt_id);
+
+    if (me) { UI.loadSettings(); loadIntro(); }
+
+    async function loadIntro() {
+      show('loading');
+      try {
+        act = await API.call('activity.get', { activity_id: id });
+        const s = act.settings;
+        const projectUrl = '../project.html?id=' + act.project.project_id;
+        UI.$('#backLink').href = projectUrl;
+        document.title = act.title;
+        UI.$('#iKind').textContent = PUI.QUIZ_KIND[s.quiz_kind];
+        UI.$('#iTitle').textContent = act.title;
+        UI.$('#iProject').textContent = act.project.title;
+        UI.$('#iDesc').textContent = act.description || '';
+        const info = (icon, label, value) => `<div class="col-6 col-md-3"><div class="border rounded-4 p-3 h-100"><div class="small text-muted"><i class="bi bi-${icon} me-1"></i>${label}</div><div class="fw-semibold">${value}</div></div></div>`;
+        const used = (act.attempts || []).filter(a => a.submitted_at).length;
+        UI.$('#iInfo').innerHTML = info('question-circle', 'จำนวนข้อ', act.question_count + ' ข้อ') +
+          info('stopwatch', 'เวลา', s.time_limit_min ? s.time_limit_min + ' นาที' : 'ไม่จำกัด') +
+          info('arrow-repeat', 'ทำได้', s.max_attempts ? `${used}/${s.max_attempts} ครั้ง` : `ไม่จำกัด (ทำแล้ว ${used})`) +
+          info('trophy', 'เกณฑ์ผ่าน', s.pass_score_pct ? s.pass_score_pct + '%' : 'ทำแล้วผ่าน');
+
+        const done = (act.attempts || []).filter(a => a.submitted_at);
+        UI.$('#iAttempts').innerHTML = done.length ? `<h6 class="text-muted">ผลการทำที่ผ่านมา</h6>
+          <div class="table-responsive mb-4"><table class="table table-sm"><thead><tr><th>ครั้งที่</th><th>คะแนน</th><th>ผล</th><th>ส่งเมื่อ</th></tr></thead><tbody>
+          ${done.map(a => `<tr><td>${a.attempt_no}</td><td><b>${a.score}</b>/${a.max_score} (${a.percent}%)</td>
+            <td>${a.graded_status === 'waiting' ? '<span class="badge-soft warning">รอตรวจอัตนัย</span>' : a.passed ? '<span class="badge-soft success">ผ่าน</span>' : '<span class="badge-soft danger">ไม่ผ่าน</span>'}</td>
+            <td class="small">${UI.thaiDate(a.submitted_at, true)}</td></tr>`).join('')}</tbody></table></div>` : '';
+
+        const inprog = (act.attempts || []).find(a => !a.submitted_at);
+        const left = s.max_attempts ? s.max_attempts - used : Infinity;
+        let btn;
+        if (!act.is_participant) btn = `<div class="alert alert-warning mb-0">คุณยังไม่ได้รับอนุมัติให้เข้าร่วมโครงการนี้</div>`;
+        else if (act.window === 'notyet') btn = `<button class="btn btn-secondary btn-lg w-100" disabled>เปิดให้ทำ ${PUI.fmtDT(act.open_at)}</button>`;
+        else if (act.window === 'closed' && !inprog) btn = `<button class="btn btn-secondary btn-lg w-100" disabled>ปิดการทำแบบทดสอบแล้ว</button>`;
+        else if (!act.question_count) btn = `<button class="btn btn-secondary btn-lg w-100" disabled>ยังไม่มีข้อสอบ</button>`;
+        else if (inprog) btn = `<button class="btn btn-warning btn-lg w-100" id="startBtn"><i class="bi bi-play-fill me-1"></i>ทำต่อจากที่ค้างไว้</button>`;
+        else if (left <= 0) btn = `<button class="btn btn-secondary btn-lg w-100" disabled>ทำครบจำนวนครั้งแล้ว</button>`;
+        else btn = `<button class="btn btn-primary btn-lg w-100" id="startBtn"><i class="bi bi-play-fill me-1"></i>${done.length ? 'ทำอีกครั้ง' : 'เริ่มทำแบบทดสอบ'}</button>
+          ${s.time_limit_min ? `<p class="small text-muted text-center mt-2 mb-0"><i class="bi bi-info-circle me-1"></i>เมื่อเริ่มแล้ว ระบบจะจับเวลา ${s.time_limit_min} นาที และส่งคำตอบอัตโนมัติเมื่อหมดเวลา</p>` : ''}`;
+        UI.$('#iAction').innerHTML = btn;
+        UI.$('#startBtn')?.addEventListener('click', start);
+        show('intro');
+      } catch (err) {
+        await UI.error(err);
+        history.length > 1 ? history.back() : (location.href = 'dashboard.html');
+      }
+    }
+
+    async function start(e) {
+      if (!e.currentTarget.classList.contains('btn-warning') && act.settings.max_attempts &&
+          !(await UI.confirm('เริ่มทำแบบทดสอบ?', `ทำได้ทั้งหมด ${act.settings.max_attempts} ครั้ง`, 'เริ่มเลย', 'question'))) return;
+      UI.btnLoading(e.currentTarget, true, 'กำลังเตรียมข้อสอบ...');
+      try {
+        attempt = await API.call('quiz.start', { activity_id: id });
+        offset = new Date(attempt.server_now).getTime() - Date.now();
+        try { answers = JSON.parse(localStorage.getItem(draftKey()) || '{}'); } catch (x) { answers = {}; }
+        renderQuestions();
+        show('taking');
+        UI.$('#quizTop').classList.remove('d-none');
+        window.scrollTo(0, 0);
+        if (attempt.deadline) startTimer();
+      } catch (err) { UI.error(err); UI.btnLoading(e.currentTarget, false); }
+    }
+
+    function renderQuestions() {
+      const qs = attempt.questions;
+      UI.$('#topTitle').textContent = act.title;
+      UI.$('#totalQ').textContent = qs.length;
+      UI.$('#questions').innerHTML = qs.map((q, i) => {
+        const a = answers[q.question_id];
+        let body = '';
+        if (q.type === 'single' || q.type === 'truefalse') {
+          body = q.options.map(o => `<label class="choice"><input class="form-check-input" type="radio" name="q_${q.question_id}" value="${o.i}" data-q="${q.question_id}" ${String(a) === String(o.i) ? 'checked' : ''}><span>${UI.esc(o.t)}</span></label>`).join('');
+        } else if (q.type === 'multiple') {
+          body = `<div class="small text-muted mb-2">เลือกได้มากกว่า 1 ข้อ</div>` + q.options.map(o => `<label class="choice"><input class="form-check-input" type="checkbox" value="${o.i}" data-q="${q.question_id}" data-multi ${(a || []).map(String).includes(String(o.i)) ? 'checked' : ''}><span>${UI.esc(o.t)}</span></label>`).join('');
+        } else if (q.type === 'short') {
+          body = `<input class="form-control form-control-lg" data-q="${q.question_id}" value="${UI.esc(a || '')}" placeholder="พิมพ์คำตอบ">`;
+        } else {
+          body = `<textarea class="form-control" rows="5" data-q="${q.question_id}" placeholder="พิมพ์คำตอบ">${UI.esc(a || '')}</textarea>`;
+        }
+        return `<div class="card mb-3" id="qq${i}"><div class="card-body p-4">
+          <div class="d-flex justify-content-between gap-2 mb-3"><div class="fw-semibold fs-5"><span class="text-primary">${i + 1}.</span> ${UI.esc(q.question_text)}</div><span class="small text-muted text-nowrap">${q.score} คะแนน</span></div>
+          ${q.image_url ? `<img src="${UI.esc(q.image_url)}" alt="" class="img-fluid rounded-3 mb-3" style="max-height:320px">` : ''}
+          ${body}</div></div>`;
+      }).join('');
+      updateNav();
+    }
+
+    function isAnswered(v) { return !(v === undefined || v === null || v === '' || (Array.isArray(v) && !v.length)); }
+    function updateNav() {
+      const qs = attempt.questions;
+      const n = qs.filter(q => isAnswered(answers[q.question_id])).length;
+      UI.$('#answered').textContent = n;
+      UI.$('#topBar').innerHTML = PUI.progressBar(Math.round(n / qs.length * 100), 6);
+      UI.$('#qNav').innerHTML = qs.map((q, i) => `<a href="#qq${i}" class="${isAnswered(answers[q.question_id]) ? 'answered' : ''}">${i + 1}</a>`).join('');
+      try { localStorage.setItem(draftKey(), JSON.stringify(answers)); } catch (e) { }
+    }
+
+    UI.$('#questions').addEventListener('input', e => {
+      const el = e.target.closest('[data-q]');
+      if (!el) return;
+      const qid = el.dataset.q;
+      if (el.dataset.multi !== undefined) answers[qid] = UI.$$(`[data-q="${qid}"][data-multi]`).filter(x => x.checked).map(x => Number(x.value));
+      else if (el.type === 'radio') answers[qid] = Number(el.value);
+      else answers[qid] = el.value;
+      updateNav();
+    });
+
+    function startTimer() {
+      const el = UI.$('#timer');
+      el.classList.remove('d-none');
+      const deadline = new Date(attempt.deadline).getTime();
+      const tick = () => {
+        const left = Math.max(0, deadline - (Date.now() + offset));
+        const m = Math.floor(left / 60000), s = Math.floor(left % 60000 / 1000);
+        UI.$('#timeLeft').textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        el.classList.toggle('warn', left < 60000);
+        if (left <= 0) { clearInterval(timerId); submit(true); }
+      };
+      tick();
+      timerId = setInterval(tick, 1000);
+    }
+
+    UI.$('#submitBtn').addEventListener('click', () => submit(false));
+
+    async function submit(auto) {
+      if (submitting) return;
+      if (!auto) {
+        const left = attempt.questions.filter(q => !isAnswered(answers[q.question_id])).length;
+        if (!(await UI.confirm('ส่งคำตอบ?', left ? `ยังไม่ได้ตอบ ${left} ข้อ` : 'ตรวจทานคำตอบเรียบร้อยแล้ว', 'ส่งคำตอบ', left ? 'warning' : 'question'))) return;
+      }
+      submitting = true;
+      clearInterval(timerId);
+      const btn = UI.$('#submitBtn');
+      UI.btnLoading(btn, true, 'กำลังส่ง...');
+      if (auto) Swal.fire({ icon: 'info', title: 'หมดเวลา', text: 'ระบบกำลังส่งคำตอบให้อัตโนมัติ', showConfirmButton: false, allowOutsideClick: false });
+      try {
+        const r = await API.call('quiz.submit', { attempt_id: attempt.attempt_id, answers });
+        try { localStorage.removeItem(draftKey()); } catch (e) { }
+        if (auto) Swal.close();
+        showResult(r);
+      } catch (err) {
+        submitting = false;
+        UI.btnLoading(btn, false);
+        UI.error(err, 'ส่งคำตอบไม่สำเร็จ');
+      }
+    }
+
+    function showResult(r) {
+      UI.$('#quizTop').classList.add('d-none');
+      const waiting = r.graded_status === 'waiting';
+      const color = waiting ? '#F59E0B' : r.passed ? '#10B981' : '#EF4444';
+      const pct = Math.round(r.percent);
+      UI.$('#resBox').innerHTML = `
+        <div class="score-ring" style="background:conic-gradient(${color} ${pct * 3.6}deg, var(--tms-surface-2) 0)">
+          <div class="inner"><div><div class="font-prompt fw-bold" style="font-size:2rem;line-height:1">${r.score}</div><div class="small text-muted">จาก ${r.max_score} คะแนน</div></div></div>
+        </div>
+        <h2 class="h3 fw-bold mb-1" style="color:${color}">${waiting ? 'รอตรวจข้ออัตนัย' : r.passed ? 'ผ่านเกณฑ์ 🎉' : 'ยังไม่ผ่านเกณฑ์'}</h2>
+        <p class="text-muted">ได้ ${r.percent}% ${r.pass_score_pct ? `(เกณฑ์ผ่าน ${r.pass_score_pct}%)` : ''}${waiting ? '<br>คะแนนนี้ยังไม่รวมข้ออัตนัย ผู้สร้างหลักสูตรจะตรวจและแจ้งผลภายหลัง' : ''}</p>
+        <div class="d-flex flex-wrap gap-2 justify-content-center mt-3">
+          <a href="../project.html?id=${act.project.project_id}" class="btn btn-primary"><i class="bi bi-arrow-left me-1"></i>กลับไปหน้าโครงการ</a>
+          <button class="btn btn-soft" onclick="loadIntro()"><i class="bi bi-list-ul me-1"></i>ดูผลทั้งหมด</button>
+        </div>`;
+      if (r.review) {
+        const qmap = {};
+        attempt.questions.forEach(q => { qmap[q.question_id] = q; });
+        UI.$('#review').innerHTML = `<h5 class="mb-3"><i class="bi bi-journal-check me-2 text-primary"></i>เฉลย</h5>` + attempt.questions.map((q, i) => {
+          const rv = r.review.find(x => x.question_id === q.question_id) || {};
+          const mine = answers[q.question_id];
+          let body = '';
+          if (q.type === 'single' || q.type === 'truefalse' || q.type === 'multiple') {
+            const chosen = Array.isArray(mine) ? mine.map(Number) : isAnswered(mine) ? [Number(mine)] : [];
+            body = q.options.map(o => {
+              const key = (rv.answer || []).map(Number).includes(o.i);
+              const pick = chosen.includes(o.i);
+              return `<div class="choice ${key ? 'is-correct' : pick ? 'is-wrong' : ''}" style="cursor:default"><i class="bi bi-${key ? 'check-circle-fill text-success' : pick ? 'x-circle-fill text-danger' : 'circle text-muted'}"></i><span>${UI.esc(o.t)}</span></div>`;
+            }).join('');
+          } else {
+            body = `<div class="small"><span class="text-muted">คำตอบของคุณ:</span> ${isAnswered(mine) ? `<span class="prose">${UI.esc(mine)}</span>` : '<i class="text-muted">ไม่ได้ตอบ</i>'}</div>` +
+              (q.type === 'short' ? `<div class="small text-success"><span class="text-muted">คำตอบที่ถูก:</span> ${(rv.answer || []).map(UI.esc).join(' / ')}</div>` : '');
+          }
+          const tag = rv.correct === true ? '<span class="badge-soft success"><i class="bi bi-check-lg"></i>ถูก</span>' : rv.correct === false ? '<span class="badge-soft danger"><i class="bi bi-x-lg"></i>ผิด</span>' : '<span class="badge-soft warning">รอตรวจ</span>';
+          return `<div class="card mb-3"><div class="card-body">
+            <div class="d-flex justify-content-between gap-2 mb-2"><div class="fw-semibold">${i + 1}. ${UI.esc(q.question_text)}</div><div class="text-nowrap">${tag}</div></div>
+            ${body}
+            ${rv.explanation ? `<div class="alert alert-info small mt-2 mb-0"><i class="bi bi-lightbulb me-1"></i>${UI.esc(rv.explanation)}</div>` : ''}
+          </div></div>`;
+        }).join('');
+      } else UI.$('#review').innerHTML = '';
+      show('result');
+      window.scrollTo(0, 0);
+    }
+
+    window.addEventListener('beforeunload', e => {
+      if (!UI.$('#taking').classList.contains('d-none') && !submitting) { e.preventDefault(); e.returnValue = ''; }
+    });
+  </script>
+</body>
+</html>

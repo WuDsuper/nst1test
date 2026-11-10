@@ -105,6 +105,7 @@
           <div class="min-w-0 flex-grow-1">
             <div class="fw-semibold text-truncate">${UI.esc(p.title)}</div>
             <div class="small text-muted"><i class="bi bi-calendar-event me-1"></i>${PUI.dateRange(p.start_date, p.end_date)}${p.hours ? ' · ' + UI.esc(p.hours) + ' ชม.' : ''}</div>
+            ${e.progress && e.progress.total && e.status !== 'pending' ? `<div class="d-flex align-items-center gap-2 small text-muted mt-1" style="max-width:320px"><div class="flex-grow-1">${PUI.progressBar(e.progress.percent, 6)}</div><span>${e.progress.done}/${e.progress.total}</span></div>` : ''}
           </div>
           <div class="text-end">${PUI.enrollBadge(e.status)}</div>
         </a>`;
