@@ -25,6 +25,7 @@
           </div>
           <div class="d-flex gap-2 d-none" id="headLinks">
             <a class="btn btn-soft" id="viewLink" target="_blank" rel="noopener"><i class="bi bi-eye me-1"></i>ดูหน้าโครงการ</a>
+            <a class="btn btn-soft" id="actLink"><i class="bi bi-list-check me-1"></i>กิจกรรม</a>
             <a class="btn btn-soft" id="partLink"><i class="bi bi-people me-1"></i>ผู้เข้าร่วม</a>
           </div>
         </div>
@@ -219,6 +220,7 @@
           UI.$('#headLinks').classList.remove('d-none');
           UI.$('#viewLink').href = '../project.html?id=' + id;
           UI.$('#partLink').href = 'participants.html?id=' + id;
+          UI.$('#actLink').href = 'activities.html?project_id=' + id;
           UI.$('#delBtn').classList.remove('d-none');
           UI.$('#statsCard').classList.remove('d-none');
           UI.$('#stEnrolled').textContent = p.enrolled + ' คน';

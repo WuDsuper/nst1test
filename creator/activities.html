@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>กิจกรรมในโครงการ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="../assets/css/style.css" rel="stylesheet">
+  <script src="../assets/js/theme.js"></script>
+</head>
+<body data-root="../">
+  <div class="app">
+    <aside class="sidebar offcanvas-lg offcanvas-start" tabindex="-1" id="sidebar"></aside>
+    <div class="app-main">
+      <header class="topbar" id="topbar"></header>
+      <main class="app-content">
+        <div class="card mb-3" id="pickCard">
+          <div class="card-body">
+            <label class="form-label" for="pjSelect">เลือกโครงการ</label>
+            <select class="form-select" id="pjSelect"></select>
+          </div>
+        </div>
+
+        <div id="content" class="d-none">
+          <div class="page-head">
+            <div class="min-w-0">
+              <div class="small text-muted" id="pjCode"></div>
+              <h1 class="h3" id="pjTitle"></h1>
+              <p class="mb-0">เพิ่มเนื้อหา แบบทดสอบ และงานที่ต้องส่ง เรียงลำดับตามที่ผู้เข้าอบรมควรทำ</p>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+              <a class="btn btn-soft" id="viewLink" target="_blank" rel="noopener"><i class="bi bi-eye me-1"></i>ดูหน้าโครงการ</a>
+              <div class="dropdown">
+                <button class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-plus-lg me-1"></i>เพิ่มกิจกรรม</button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                  <li><button class="dropdown-item py-2" data-add="content"><i class="bi bi-play-circle me-2 text-info"></i>เนื้อหา / บทเรียน<div class="small text-muted ms-4">วิดีโอ เอกสาร ลิงก์</div></button></li>
+                  <li><button class="dropdown-item py-2" data-add="quiz"><i class="bi bi-ui-checks me-2 text-purple"></i>แบบทดสอบ<div class="small text-muted ms-4">ก่อนเรียน หลังเรียน ตรวจอัตโนมัติ</div></button></li>
+                  <li><button class="dropdown-item py-2" data-add="assignment"><i class="bi bi-cloud-arrow-up me-2 text-danger"></i>ส่งงาน<div class="small text-muted ms-4">ไฟล์ ลิงก์ หรือพิมพ์คำตอบ</div></button></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div id="list"></div>
+          </div>
+          <p class="small text-muted mt-2"><i class="bi bi-info-circle me-1"></i>ผู้เข้าอบรมจะ "ผ่านการอบรม" อัตโนมัติเมื่อทำกิจกรรมที่ <b>บังคับ</b> ครบตามเกณฑ์ <span id="passText"></span></p>
+        </div>
+
+        <div id="noProject" class="d-none">
+          <div class="card"><div class="empty-state">
+            <div class="icon soft-purple"><i class="bi bi-folder2-open"></i></div>
+            <h5>ยังไม่มีโครงการ</h5><p>สร้างโครงการก่อน แล้วจึงเพิ่มกิจกรรมได้</p>
+            <a href="project-edit.html" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>สร้างโครงการ</a>
+          </div></div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal กิจกรรม -->
+  <div class="modal fade" id="actModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <form class="modal-content" id="actForm" novalidate>
+        <div class="modal-header">
+          <div class="d-flex align-items-center gap-2"><span id="mIcon"></span><h5 class="modal-title" id="mTitle">เพิ่มกิจกรรม</h5></div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="activity_id">
+          <input type="hidden" name="type">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label" for="aTitle">ชื่อกิจกรรม <span class="text-danger">*</span></label>
+              <input class="form-control" id="aTitle" name="title" maxlength="300" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="aDesc">คำอธิบาย / คำชี้แจง</label>
+              <textarea class="form-control" id="aDesc" name="description" rows="3" maxlength="5000"></textarea>
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="aUrl" id="urlLabel">ลิงก์เนื้อหา</label>
+              <input type="url" class="form-control" id="aUrl" name="content_url" placeholder="https://www.youtube.com/watch?v=... หรือลิงก์ Google Drive / เว็บไซต์">
+              <div class="form-text" id="urlHint">ลิงก์ YouTube จะแสดงวิดีโอในหน้าระบบได้ทันที</div>
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label" for="aOpen">เปิดให้ทำ</label>
+              <input type="datetime-local" class="form-control" id="aOpen" name="open_at">
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label" for="aClose">ปิดรับ</label>
+              <input type="datetime-local" class="form-control" id="aClose" name="close_at">
+              <div class="form-text">เว้นว่าง = ทำได้ตลอด</div>
+            </div>
+
+            <!-- ค่าตั้งแบบทดสอบ -->
+            <div class="col-12 d-none" data-for="quiz">
+              <div class="border rounded-4 p-3">
+                <h6 class="mb-3"><i class="bi bi-sliders me-2 text-primary"></i>ตั้งค่าแบบทดสอบ</h6>
+                <div class="row g-3">
+                  <div class="col-sm-6">
+                    <label class="form-label" for="qKind">ประเภท</label>
+                    <select class="form-select" id="qKind" data-s="quiz_kind">
+                      <option value="general">แบบทดสอบทั่วไป</option>
+                      <option value="pre">แบบทดสอบก่อนเรียน (Pre-test)</option>
+                      <option value="post">แบบทดสอบหลังเรียน (Post-test)</option>
+                    </select>
+                  </div>
+                  <div class="col-sm-6">
+                    <label class="form-label" for="qPass">เกณฑ์ผ่าน (%)</label>
+                    <input type="number" class="form-control" id="qPass" data-s="pass_score_pct" min="0" max="100">
+                    <div class="form-text">0 = ทำแล้วถือว่าผ่าน (เหมาะกับ Pre-test)</div>
+                  </div>
+                  <div class="col-sm-6">
+                    <label class="form-label" for="qTime">จำกัดเวลา (นาที)</label>
+                    <input type="number" class="form-control" id="qTime" data-s="time_limit_min" min="0" max="600">
+                    <div class="form-text">0 = ไม่จำกัดเวลา</div>
+                  </div>
+                  <div class="col-sm-6">
+                    <label class="form-label" for="qAttempts">ทำได้กี่ครั้ง</label>
+                    <input type="number" class="form-control" id="qAttempts" data-s="max_attempts" min="0" max="50">
+                    <div class="form-text">0 = ไม่จำกัด</div>
+                  </div>
+                  <div class="col-sm-6">
+                    <label class="form-label" for="qShow">หลังส่งคำตอบ</label>
+                    <select class="form-select" id="qShow" data-s="show_answer">
+                      <option value="after_submit">แสดงคะแนน + เฉลย</option>
+                      <option value="score_only">แสดงเฉพาะคะแนน</option>
+                    </select>
+                  </div>
+                  <div class="col-sm-6 d-flex flex-column justify-content-end gap-1">
+                    <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="qShufQ" data-s="shuffle_questions"><label class="form-check-label" for="qShufQ">สลับลำดับข้อ</label></div>
+                    <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="qShufO" data-s="shuffle_options"><label class="form-check-label" for="qShufO">สลับลำดับตัวเลือก</label></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ค่าตั้งการส่งงาน -->
+            <div class="col-12 d-none" data-for="assignment">
+              <div class="border rounded-4 p-3">
+                <h6 class="mb-3"><i class="bi bi-sliders me-2 text-primary"></i>ตั้งค่าการส่งงาน</h6>
+                <div class="row g-3">
+                  <div class="col-12">
+                    <label class="form-label">รูปแบบที่รับ</label>
+                    <div class="d-flex flex-wrap gap-3">
+                      <div class="form-check"><input class="form-check-input" type="checkbox" id="stFile" data-st="file"><label class="form-check-label" for="stFile">แนบไฟล์</label></div>
+                      <div class="form-check"><input class="form-check-input" type="checkbox" id="stLink" data-st="link"><label class="form-check-label" for="stLink">ลิงก์</label></div>
+                      <div class="form-check"><input class="form-check-input" type="checkbox" id="stText" data-st="text"><label class="form-check-label" for="stText">พิมพ์คำตอบ</label></div>
+                    </div>
+                  </div>
+                  <div class="col-sm-8">
+                    <label class="form-label" for="aExt">นามสกุลไฟล์ที่รับ</label>
+                    <input class="form-control" id="aExt" data-s="allowed_ext" placeholder="pdf,docx,jpg">
+                  </div>
+                  <div class="col-sm-4">
+                    <label class="form-label" for="aSize">ขนาดไฟล์สูงสุด (MB)</label>
+                    <input type="number" class="form-control" id="aSize" data-s="max_size_mb" min="1" max="25">
+                  </div>
+                  <div class="col-sm-6">
+                    <label class="form-label" for="aMax">คะแนนเต็ม</label>
+                    <input type="number" class="form-control" id="aMax" data-s="max_score" min="0" max="1000">
+                  </div>
+                  <div class="col-sm-6 d-flex align-items-end">
+                    <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="aResub" data-s="allow_resubmit"><label class="form-check-label" for="aResub">อนุญาตให้ส่งงานซ้ำ / แก้ไขได้</label></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-sm-6">
+              <label class="form-label" for="aStatus">สถานะ</label>
+              <select class="form-select" id="aStatus" name="status">
+                <option value="published">เผยแพร่ (ผู้เข้าอบรมเห็น)</option>
+                <option value="draft">ฉบับร่าง (ซ่อนไว้ก่อน)</option>
+              </select>
+            </div>
+            <div class="col-sm-6 d-flex align-items-end">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="aReq" name="is_required">
+                <label class="form-check-label" for="aReq">กิจกรรมบังคับ (นับเป็นเกณฑ์ผ่านโครงการ)</label>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">ยกเลิก</button>
+          <button type="submit" class="btn btn-primary" id="saveBtn"><i class="bi bi-check2 me-1"></i>บันทึก</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/mock.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/layout.js"></script>
+  <script src="../assets/js/projects.js"></script>
+  <script>
+    const me = Auth.require(['creator', 'admin']);
+    const modal = new bootstrap.Modal('#actModal');
+    const form = UI.$('#actForm');
+    let projects = [], project = null, acts = [];
+
+    if (me) init();
+
+    async function init() {
+      Layout.init(me, { active: 'activities', title: 'กิจกรรมในโครงการ' });
+      try {
+        projects = await API.call('project.list', { scope: me.role === 'admin' ? 'all' : 'mine' });
+        if (!projects.length) { UI.$('#noProject').classList.remove('d-none'); UI.$('#pickCard').classList.add('d-none'); return; }
+        const sel = UI.$('#pjSelect');
+        sel.innerHTML = projects.map(p => `<option value="${p.project_id}">[ปีงบ ${UI.esc(p.fy_year)}] ${UI.esc(p.title)}</option>`).join('');
+        const id = UI.qs('project_id');
+        sel.value = id && projects.some(p => p.project_id === id) ? id : projects[0].project_id;
+        sel.addEventListener('change', () => { history.replaceState(null, '', '?project_id=' + sel.value); load(); });
+        load();
+      } catch (err) { UI.error(err); }
+    }
+
+    async function load() {
+      project = projects.find(p => p.project_id === UI.$('#pjSelect').value);
+      UI.$('#content').classList.remove('d-none');
+      UI.$('#pjCode').textContent = `${project.code} · ปีงบประมาณ ${project.fy_year}`;
+      UI.$('#pjTitle').textContent = project.title;
+      UI.$('#viewLink').href = '../project.html?id=' + project.project_id;
+      UI.$('#passText').textContent = `(${project.pass_criteria || 80}%)`;
+      UI.$('#list').innerHTML = '<div class="p-4"><div class="skeleton" style="height:140px"></div></div>';
+      try {
+        const r = await API.call('activity.list', { project_id: project.project_id });
+        acts = r.activities;
+        render();
+      } catch (err) { UI.error(err); }
+    }
+
+    function render() {
+      if (!acts.length) {
+        UI.$('#list').innerHTML = `<div class="empty-state"><div class="icon soft-primary"><i class="bi bi-list-check"></i></div>
+          <h5>ยังไม่มีกิจกรรม</h5><p>เริ่มจากเพิ่มแบบทดสอบก่อนเรียน เนื้อหา แบบทดสอบหลังเรียน และงานที่ต้องส่ง</p></div>`;
+        return;
+      }
+      UI.$('#list').innerHTML = acts.map((a, i) => {
+        const st = a.stats || {};
+        const pct = st.participants ? Math.round(st.done / st.participants * 100) : 0;
+        const extra = a.type === 'quiz'
+          ? `<span class="badge-soft ${a.question_count ? 'primary' : 'danger'}"><i class="bi bi-question-circle"></i>${a.question_count} ข้อ</span>
+             <span class="small text-muted">${UI.esc(PUI.QUIZ_KIND[a.settings.quiz_kind] || '')} · ผ่าน ${a.settings.pass_score_pct}%${a.settings.time_limit_min ? ' · ' + a.settings.time_limit_min + ' นาที' : ''}</span>`
+          : a.type === 'assignment' ? `<span class="small text-muted">คะแนนเต็ม ${a.settings.max_score}</span>` : '';
+        return `<div class="act-item ${a.status === 'draft' ? 'is-draft' : ''}">
+          ${PUI.actIcon(a.type)}
+          <div class="flex-grow-1 min-w-0">
+            <div class="act-no">กิจกรรมที่ ${i + 1} · ${PUI.ACT[a.type].label}</div>
+            <div class="fw-semibold mb-1">${UI.esc(a.title)}</div>
+            <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+              ${a.status === 'draft' ? PUI.statusBadge('draft') : ''}
+              <span class="badge-soft ${a.is_required ? 'info' : 'secondary'}">${a.is_required ? 'บังคับ' : 'ไม่บังคับ'}</span>
+              ${extra}
+              <span class="small text-muted"><i class="bi bi-clock me-1"></i>${PUI.actWindow(a)}</span>
+            </div>
+            <div class="d-flex align-items-center gap-2 small text-muted" style="max-width:420px">
+              <span class="text-nowrap">ทำแล้ว ${st.done || 0}/${st.participants || 0}</span>
+              <div class="flex-grow-1">${PUI.progressBar(pct, 6)}</div>
+              ${st.pending_review ? `<a href="grading.html?id=${a.activity_id}" class="badge-soft warning text-decoration-none text-nowrap"><i class="bi bi-hourglass-split"></i>รอตรวจ ${st.pending_review}</a>` : ''}
+            </div>
+          </div>
+          <div class="act-actions">
+            ${a.type === 'quiz' ? `<a href="quiz-builder.html?id=${a.activity_id}" class="btn btn-sm btn-soft"><i class="bi bi-pencil-square me-1"></i>ข้อสอบ</a>` : ''}
+            ${a.type !== 'content' ? `<a href="grading.html?id=${a.activity_id}" class="btn btn-sm btn-soft"><i class="bi bi-clipboard-check me-1"></i>ผลงาน</a>` : ''}
+            <button class="btn btn-sm btn-light" data-act="up" data-i="${i}" ${i === 0 ? 'disabled' : ''} title="เลื่อนขึ้น" aria-label="เลื่อนขึ้น"><i class="bi bi-arrow-up"></i></button>
+            <button class="btn btn-sm btn-light" data-act="down" data-i="${i}" ${i === acts.length - 1 ? 'disabled' : ''} title="เลื่อนลง" aria-label="เลื่อนลง"><i class="bi bi-arrow-down"></i></button>
+            <button class="btn btn-sm btn-light" data-act="edit" data-i="${i}" title="แก้ไข" aria-label="แก้ไข"><i class="bi bi-gear"></i></button>
+            <button class="btn btn-sm btn-soft-danger" data-act="del" data-i="${i}" title="ลบ" aria-label="ลบ"><i class="bi bi-trash"></i></button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    /* ---------- modal ---------- */
+    function openModal(type, a) {
+      form.reset();
+      form.classList.remove('was-validated');
+      const t = a ? a.type : type;
+      const s = a ? a.settings : {
+        quiz: { time_limit_min: 0, max_attempts: 1, pass_score_pct: 60, show_answer: 'after_submit', quiz_kind: 'general' },
+        assignment: { submit_types: ['file', 'link', 'text'], allowed_ext: 'pdf,doc,docx,ppt,pptx,xls,xlsx,jpg,jpeg,png', max_size_mb: 10, max_score: 10, allow_resubmit: true }
+      }[t] || {};
+      UI.fillForm(form, a || { type: t, status: 'published', is_required: true });
+      form.type.value = t;
+      form.is_required.checked = a ? a.is_required : true;
+      UI.$('#mIcon').innerHTML = PUI.actIcon(t, 'sm');
+      UI.$('#mTitle').textContent = (a ? 'แก้ไข' : 'เพิ่ม') + PUI.ACT[t].label;
+      UI.$$('[data-for]').forEach(el => el.classList.toggle('d-none', el.dataset.for !== t));
+      UI.$('#urlLabel').textContent = t === 'content' ? 'ลิงก์เนื้อหา (วิดีโอ / เอกสาร)' : 'ลิงก์เอกสารประกอบ (ถ้ามี)';
+      UI.$('#urlHint').classList.toggle('d-none', t !== 'content');
+      UI.$$('[data-s]').forEach(el => {
+        const v = s[el.dataset.s];
+        if (el.type === 'checkbox') el.checked = !!v; else el.value = v ?? '';
+      });
+      UI.$$('[data-st]').forEach(el => { el.checked = (s.submit_types || []).includes(el.dataset.st); });
+      modal.show();
+    }
+
+    UI.$$('[data-add]').forEach(b => b.addEventListener('click', () => openModal(b.dataset.add, null)));
+
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      if (!form.checkValidity()) { form.classList.add('was-validated'); return; }
+      const d = UI.formData(form);
+      d.project_id = project.project_id;
+      d.is_required = form.is_required.checked;
+      const settings = {};
+      UI.$$(`[data-for="${d.type}"] [data-s]`).forEach(el => { settings[el.dataset.s] = el.type === 'checkbox' ? el.checked : el.value; });
+      if (d.type === 'assignment') settings.submit_types = UI.$$('[data-st]').filter(x => x.checked).map(x => x.dataset.st);
+      d.settings = settings;
+      const btn = UI.$('#saveBtn');
+      UI.btnLoading(btn, true, 'กำลังบันทึก...');
+      try {
+        const saved = await API.call('activity.save', d);
+        modal.hide();
+        UI.toast('บันทึกกิจกรรมแล้ว');
+        if (!d.activity_id && saved.type === 'quiz') {
+          const r = await Swal.fire({ icon: 'success', title: 'สร้างแบบทดสอบแล้ว', text: 'เพิ่มข้อสอบต่อเลยไหม?', showCancelButton: true,
+            confirmButtonText: 'เพิ่มข้อสอบ', cancelButtonText: 'ภายหลัง', confirmButtonColor: '#4F46E5', reverseButtons: true });
+          if (r.isConfirmed) { location.href = 'quiz-builder.html?id=' + saved.activity_id; return; }
+        }
+        load();
+      } catch (err) { UI.error(err, 'บันทึกไม่สำเร็จ'); }
+      UI.btnLoading(btn, false);
+    });
+
+    UI.$('#list').addEventListener('click', async e => {
+      const b = e.target.closest('[data-act]');
+      if (!b) return;
+      const i = Number(b.dataset.i);
+      const a = acts[i];
+      if (b.dataset.act === 'edit') return openModal(null, a);
+      if (b.dataset.act === 'del') {
+        if (!(await UI.confirm('ลบกิจกรรมนี้?', a.title, 'ลบ'))) return;
+        try { await API.call('activity.delete', { activity_id: a.activity_id }); UI.toast('ลบกิจกรรมแล้ว'); load(); }
+        catch (err) { UI.error(err, 'ลบไม่ได้'); }
+        return;
+      }
+      const j = b.dataset.act === 'up' ? i - 1 : i + 1;
+      [acts[i], acts[j]] = [acts[j], acts[i]];
+      render();
+      try { await API.call('activity.reorder', { project_id: project.project_id, activity_ids: acts.map(x => x.activity_id) }); }
+      catch (err) { UI.error(err); load(); }
+    });
+  </script>
+</body>
+</html>

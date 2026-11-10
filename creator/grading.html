@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ตรวจงาน</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="../assets/css/style.css" rel="stylesheet">
+  <script src="../assets/js/theme.js"></script>
+</head>
+<body data-root="../">
+  <div class="app">
+    <aside class="sidebar offcanvas-lg offcanvas-start" tabindex="-1" id="sidebar"></aside>
+    <div class="app-main">
+      <header class="topbar" id="topbar"></header>
+      <main class="app-content">
+        <!-- คิวตรวจงาน -->
+        <section id="queueView" class="d-none">
+          <div class="page-head">
+            <div><h1>ตรวจงาน</h1><p>แบบทดสอบและงานที่ส่งในโครงการของคุณ เรียงตามจำนวนที่รอตรวจ</p></div>
+          </div>
+          <div class="card"><div id="queue"></div></div>
+        </section>
+
+        <!-- ตรวจกิจกรรม -->
+        <section id="actView" class="d-none">
+          <div class="page-head">
+            <div class="min-w-0">
+              <a href="grading.html" class="small text-decoration-none"><i class="bi bi-arrow-left me-1"></i>รายการตรวจงานทั้งหมด</a>
+              <div class="d-flex align-items-center gap-3 mt-2">
+                <span id="aIcon"></span>
+                <div class="min-w-0"><h1 class="h4 mb-0" id="aTitle"></h1><div class="small text-muted" id="aSub"></div></div>
+              </div>
+            </div>
+            <div class="d-flex gap-2">
+              <a class="btn btn-soft d-none" id="builderLink"><i class="bi bi-pencil-square me-1"></i>แก้ไขข้อสอบ</a>
+              <button class="btn btn-outline-primary" id="exportBtn"><i class="bi bi-file-earmark-spreadsheet me-1"></i>ส่งออก Excel</button>
+            </div>
+          </div>
+          <div class="row g-3 mb-3" id="stats"></div>
+          <div class="d-flex flex-wrap justify-content-between gap-2 mb-3">
+            <div class="tab-pills" id="tabs"></div>
+            <div class="input-group" style="max-width:280px">
+              <span class="input-group-text"><i class="bi bi-search"></i></span>
+              <input type="search" class="form-control" id="q" placeholder="ค้นหาชื่อ">
+            </div>
+          </div>
+          <div class="card">
+            <div class="table-responsive">
+              <table class="table table-hover table-cards table-wide">
+                <thead id="thead"></thead>
+                <tbody id="tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal ตรวจ -->
+  <div class="modal fade" id="gradeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="d-flex align-items-center gap-3 min-w-0">
+            <span class="avatar" id="gAvatar"></span>
+            <div class="min-w-0"><h5 class="modal-title text-truncate" id="gName"></h5><div class="small text-muted text-truncate" id="gSub"></div></div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button>
+        </div>
+        <div class="modal-body" id="gBody"></div>
+        <div class="modal-footer" id="gFoot"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/mock.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/layout.js"></script>
+  <script src="../assets/js/projects.js"></script>
+  <script>
+    const me = Auth.require(['creator', 'admin']);
+    const id = UI.qs('id');
+    const modal = new bootstrap.Modal('#gradeModal');
+    let data = null, act = null, tab = 'all';
+
+    if (me) {
+      Layout.init(me, { active: 'grading', title: 'ตรวจงาน' });
+      id ? loadActivity() : loadQueue();
+    }
+
+    /* ---------- คิว ---------- */
+    async function loadQueue() {
+      UI.$('#queueView').classList.remove('d-none');
+      UI.$('#queue').innerHTML = '<div class="p-4"><div class="skeleton" style="height:120px"></div></div>';
+      try {
+        const list = await API.call('activity.gradingQueue');
+        UI.$('#queue').innerHTML = list.length ? list.map(x => `
+          <a href="grading.html?id=${x.activity_id}" class="act-item text-decoration-none text-body">
+            ${PUI.actIcon(x.type, 'sm')}
+            <div class="flex-grow-1 min-w-0">
+              <div class="fw-semibold">${UI.esc(x.title)}</div>
+              <div class="small text-muted text-truncate">${UI.esc(x.project_code)} · ${UI.esc(x.project_title)}</div>
+            </div>
+            <div class="text-end text-nowrap">
+              ${x.pending ? `<span class="badge-soft warning"><i class="bi bi-hourglass-split"></i>รอตรวจ ${x.pending}</span>` : '<span class="badge-soft success"><i class="bi bi-check2"></i>ตรวจครบ</span>'}
+              <div class="small text-muted mt-1">${x.type === 'quiz' ? 'ทำแล้ว' : 'ส่งแล้ว'} ${x.total}</div>
+            </div>
+          </a>`).join('')
+          : '<div class="empty-state"><div class="icon soft-success"><i class="bi bi-clipboard-check"></i></div><h5>ยังไม่มีแบบทดสอบหรืองานที่ต้องตรวจ</h5><a href="activities.html" class="btn btn-primary btn-sm mt-2">ไปที่กิจกรรม</a></div>';
+      } catch (err) { UI.error(err); }
+    }
+
+    /* ---------- กิจกรรม ---------- */
+    async function loadActivity() {
+      UI.$('#actView').classList.remove('d-none');
+      UI.$('#tbody').innerHTML = '<tr><td colspan="7"><div class="skeleton" style="height:120px"></div></td></tr>';
+      try {
+        const info = await API.call('activity.get', { activity_id: id });
+        act = info;
+        data = await API.call(info.type === 'quiz' ? 'quiz.attempts' : 'submission.list', { activity_id: id });
+        UI.$('#aIcon').innerHTML = PUI.actIcon(info.type);
+        UI.$('#aTitle').textContent = info.title;
+        UI.$('#aSub').textContent = `${info.project.code} · ${info.project.title}`;
+        if (info.type === 'quiz') { UI.$('#builderLink').classList.remove('d-none'); UI.$('#builderLink').href = 'quiz-builder.html?id=' + id; }
+        render();
+      } catch (err) { UI.error(err); }
+    }
+
+    function stat(icon, cls, label, value) {
+      return `<div class="col-6 col-lg-3"><div class="card stat-card"><div class="stat-icon ${cls}"><i class="bi bi-${icon}"></i></div><div><div class="stat-value">${value}</div><div class="stat-label">${label}</div></div></div></div>`;
+    }
+
+    const SUB_ST = {
+      none:      { label: 'ยังไม่ส่ง',  cls: 'secondary', icon: 'dash-circle' },
+      submitted: { label: 'รอตรวจ',    cls: 'warning',   icon: 'hourglass-split' },
+      graded:    { label: 'ตรวจแล้ว',  cls: 'success',   icon: 'check-circle' },
+      revise:    { label: 'ให้แก้ไข',  cls: 'danger',    icon: 'arrow-repeat' }
+    };
+    const QZ_ST = {
+      auto:    { label: 'ตรวจอัตโนมัติ', cls: 'info',    icon: 'robot' },
+      waiting: { label: 'รอตรวจอัตนัย',  cls: 'warning', icon: 'hourglass-split' },
+      done:    { label: 'ตรวจแล้ว',      cls: 'success', icon: 'check-circle' }
+    };
+    const b = x => `<span class="badge-soft ${x.cls}"><i class="bi bi-${x.icon}"></i>${x.label}</span>`;
+
+    function render() {
+      const q = UI.$('#q').value.trim().toLowerCase();
+      const match = u => !q || [u.first_name, u.last_name, u.email, u.organization].join(' ').toLowerCase().includes(q);
+      if (act.type === 'quiz') {
+        const at = data.attempts;
+        const avg = at.length ? Math.round(at.reduce((s, x) => s + Number(x.percent || 0), 0) / at.length) : 0;
+        UI.$('#stats').innerHTML = stat('people', 'soft-primary', 'ครั้งที่ทำทั้งหมด', at.length) +
+          stat('graph-up', 'soft-info', 'คะแนนเฉลี่ย', avg + '%') +
+          stat('check2-circle', 'soft-success', 'ผ่านเกณฑ์', at.filter(x => x.passed).length) +
+          stat('hourglass-split', 'soft-warning', 'รอตรวจอัตนัย', at.filter(x => x.graded_status === 'waiting').length);
+        const tabs = [['all', 'ทั้งหมด'], ['waiting', 'รอตรวจ'], ['passed', 'ผ่าน'], ['failed', 'ไม่ผ่าน']];
+        const f = { all: () => true, waiting: x => x.graded_status === 'waiting', passed: x => x.passed, failed: x => !x.passed && x.graded_status !== 'waiting' };
+        UI.$('#tabs').innerHTML = tabs.map(([k, l]) => `<button type="button" class="${tab === k ? 'active' : ''}" data-tab="${k}">${l}<span class="n">${at.filter(f[k]).length}</span></button>`).join('');
+        UI.$('#thead').innerHTML = '<tr><th>ผู้ทำแบบทดสอบ</th><th>ครั้งที่</th><th>คะแนน</th><th>ผล</th><th>สถานะการตรวจ</th><th>ส่งเมื่อ</th><th class="text-end">จัดการ</th></tr>';
+        const list = at.filter(f[tab]).filter(x => match(x.user));
+        UI.$('#tbody').innerHTML = list.length ? list.map(x => `<tr>
+            <td data-label="" class="td-main">${userCell(x.user)}</td>
+            <td data-label="ครั้งที่">${x.attempt_no}</td>
+            <td data-label="คะแนน"><b>${x.score}</b>/${x.max_score} <span class="small text-muted">(${x.percent}%)</span></td>
+            <td data-label="ผล">${x.graded_status === 'waiting' ? '<span class="text-muted small">รอผล</span>' : x.passed ? '<span class="badge-soft success">ผ่าน</span>' : '<span class="badge-soft danger">ไม่ผ่าน</span>'}</td>
+            <td data-label="สถานะการตรวจ">${b(QZ_ST[x.graded_status] || QZ_ST.auto)}</td>
+            <td data-label="ส่งเมื่อ" class="small text-nowrap">${UI.thaiDate(x.submitted_at, true)}</td>
+            <td data-label="" class="text-end td-actions"><button class="btn btn-sm ${x.graded_status === 'waiting' ? 'btn-primary' : 'btn-soft'}" data-open="${x.attempt_id}">${x.graded_status === 'waiting' ? '<i class="bi bi-pencil me-1"></i>ตรวจ' : '<i class="bi bi-eye me-1"></i>ดูคำตอบ'}</button></td>
+          </tr>`).join('') : emptyRow();
+      } else {
+        const items = data.items;
+        const st = i => (i.submission ? i.submission.status : 'none');
+        const graded = items.filter(i => st(i) === 'graded');
+        const avg = graded.length ? (graded.reduce((s, i) => s + Number(i.submission.score || 0), 0) / graded.length).toFixed(1) : '-';
+        UI.$('#stats').innerHTML = stat('people', 'soft-primary', 'ผู้เข้าอบรม', items.length) +
+          stat('send-check', 'soft-info', 'ส่งแล้ว', items.filter(i => i.submission).length) +
+          stat('hourglass-split', 'soft-warning', 'รอตรวจ', items.filter(i => st(i) === 'submitted').length) +
+          stat('star', 'soft-success', `คะแนนเฉลี่ย (เต็ม ${act.settings.max_score})`, avg);
+        const tabs = [['all', 'ทั้งหมด'], ['submitted', 'รอตรวจ'], ['graded', 'ตรวจแล้ว'], ['revise', 'ให้แก้ไข'], ['none', 'ยังไม่ส่ง']];
+        UI.$('#tabs').innerHTML = tabs.map(([k, l]) => `<button type="button" class="${tab === k ? 'active' : ''}" data-tab="${k}">${l}<span class="n">${items.filter(i => k === 'all' || st(i) === k).length}</span></button>`).join('');
+        UI.$('#thead').innerHTML = '<tr><th>ผู้เข้าอบรม</th><th>งานที่ส่ง</th><th>ส่งเมื่อ</th><th>คะแนน</th><th>สถานะ</th><th class="text-end">จัดการ</th></tr>';
+        const list = items.filter(i => tab === 'all' || st(i) === tab).filter(i => match(i.user));
+        UI.$('#tbody').innerHTML = list.length ? list.map(i => {
+          const s = i.submission;
+          return `<tr>
+            <td data-label="" class="td-main">${userCell(i.user)}</td>
+            <td data-label="งานที่ส่ง" class="small">${s ? workLinks(s) : '-'}</td>
+            <td data-label="ส่งเมื่อ" class="small text-nowrap">${s ? UI.thaiDate(s.submitted_at, true) : '-'}</td>
+            <td data-label="คะแนน">${s && s.score !== '' ? `<b>${UI.esc(s.score)}</b>/${act.settings.max_score}` : '-'}</td>
+            <td data-label="สถานะ">${b(SUB_ST[st(i)])}</td>
+            <td data-label="" class="text-end td-actions">${s ? `<button class="btn btn-sm ${s.status === 'submitted' ? 'btn-primary' : 'btn-soft'}" data-open="${s.submission_id}"><i class="bi bi-pencil me-1"></i>${s.status === 'submitted' ? 'ตรวจ' : 'แก้คะแนน'}</button>` : ''}</td>
+          </tr>`;
+        }).join('') : emptyRow();
+      }
+    }
+
+    function userCell(u) {
+      return `<div class="d-flex align-items-center gap-3 min-w-0"><span class="avatar">${UI.esc(UI.initials(u))}</span>
+        <div class="min-w-0"><div class="fw-semibold">${UI.esc(UI.fullName(u))}</div><div class="small text-muted text-truncate">${UI.esc(u.organization || u.email)}</div></div></div>`;
+    }
+    function workLinks(s) {
+      const out = [];
+      if (s.file_url) out.push(`<a href="${UI.esc(s.file_url)}" target="_blank" rel="noopener"><i class="bi bi-file-earmark-arrow-down me-1"></i>${UI.esc(s.file_name || 'ไฟล์')}</a>`);
+      if (s.link_url) out.push(`<a href="${UI.esc(s.link_url)}" target="_blank" rel="noopener"><i class="bi bi-link-45deg me-1"></i>ลิงก์</a>`);
+      if (s.text_answer) out.push('<span class="text-muted"><i class="bi bi-text-paragraph me-1"></i>คำตอบแบบพิมพ์</span>');
+      return out.join('<br>');
+    }
+    const emptyRow = () => '<tr><td colspan="7" data-label=""><div class="empty-state"><div class="icon soft-primary"><i class="bi bi-inbox"></i></div><h6>ไม่มีรายการ</h6></div></td></tr>';
+
+    UI.$('#tabs').addEventListener('click', e => { const t = e.target.closest('[data-tab]'); if (t) { tab = t.dataset.tab; render(); } });
+    UI.$('#q').addEventListener('input', render);
+    UI.$('#tbody').addEventListener('click', e => { const t = e.target.closest('[data-open]'); if (t) (act.type === 'quiz' ? openAttempt : openSub)(t.dataset.open); });
+
+    function modalHead(u, sub) {
+      UI.$('#gAvatar').textContent = UI.initials(u);
+      UI.$('#gName').textContent = UI.fullName(u);
+      UI.$('#gSub').textContent = sub;
+    }
+
+    /* ---------- ตรวจแบบทดสอบ ---------- */
+    function answerText(q, ans) {
+      if (ans === undefined || ans === null || ans === '' || (Array.isArray(ans) && !ans.length)) return '<span class="text-muted fst-italic">ไม่ได้ตอบ</span>';
+      if (q.type === 'single' || q.type === 'truefalse') return UI.esc(q.options[Number(ans)] ?? ans);
+      if (q.type === 'multiple') return (Array.isArray(ans) ? ans : []).map(i => UI.esc(q.options[Number(i)])).join(', ');
+      return `<span class="prose">${UI.esc(ans)}</span>`;
+    }
+    function keyText(q) {
+      if (q.type === 'single' || q.type === 'truefalse' || q.type === 'multiple') return q.answer.map(i => UI.esc(q.options[i])).join(', ');
+      if (q.type === 'short') return q.answer.map(UI.esc).join(' / ');
+      return '';
+    }
+    function isCorrect(q, ans) {
+      if (q.type === 'single' || q.type === 'truefalse') return ans !== undefined && ans !== '' && Number(ans) === q.answer[0];
+      if (q.type === 'multiple') { const a = (Array.isArray(ans) ? ans : []).map(Number).sort(); const k = q.answer.slice().sort(); return a.length === k.length && a.every((v, i) => v === k[i]); }
+      if (q.type === 'short') { const n = x => String(x || '').trim().toLowerCase().replace(/\s+/g, ' '); return n(ans) !== '' && q.answer.some(k => n(k) === n(ans)); }
+      return null;
+    }
+
+    function openAttempt(attemptId) {
+      const x = data.attempts.find(a => a.attempt_id === attemptId);
+      modalHead(x.user, `ครั้งที่ ${x.attempt_no} · ${x.score}/${x.max_score} คะแนน (${x.percent}%)`);
+      const essays = data.questions.filter(q => q.type === 'essay');
+      UI.$('#gBody').innerHTML = data.questions.map((q, i) => {
+        const ans = x.answers[q.question_id];
+        const ok = isCorrect(q, ans);
+        return `<div class="border rounded-4 p-3 mb-3 ${q.type === 'essay' ? 'border-warning' : ''}">
+          <div class="d-flex justify-content-between gap-2 mb-2">
+            <div class="fw-semibold">${i + 1}. ${UI.esc(q.question_text)}</div>
+            <div class="text-nowrap small">${ok === true ? '<span class="badge-soft success"><i class="bi bi-check-lg"></i>ถูก</span>' : ok === false ? '<span class="badge-soft danger"><i class="bi bi-x-lg"></i>ผิด</span>' : ''} <span class="text-muted">${q.score} คะแนน</span></div>
+          </div>
+          <div class="small"><span class="text-muted">คำตอบ:</span> ${answerText(q, ans)}</div>
+          ${keyText(q) ? `<div class="small text-success mt-1"><span class="text-muted">เฉลย:</span> ${keyText(q)}</div>` : ''}
+          ${q.type === 'essay' ? `<div class="d-flex align-items-center gap-2 mt-3"><label class="small" for="es_${q.question_id}">ให้คะแนน</label>
+            <input type="number" class="form-control form-control-sm" style="width:100px" min="0" max="${q.score}" step="0.5" id="es_${q.question_id}" data-essay="${q.question_id}" value="${x.essay[q.question_id] ?? ''}">
+            <span class="small text-muted">/ ${q.score}</span></div>` : ''}
+        </div>`;
+      }).join('');
+      UI.$('#gFoot').innerHTML = `<button type="button" class="btn btn-light" data-bs-dismiss="modal">ปิด</button>` +
+        (essays.length ? `<button type="button" class="btn btn-primary" id="saveEssay"><i class="bi bi-check2 me-1"></i>บันทึกคะแนนอัตนัย</button>` : '');
+      UI.$('#saveEssay')?.addEventListener('click', async e => {
+        const scores = {};
+        let missing = false;
+        UI.$$('[data-essay]').forEach(el => { if (el.value === '') missing = true; scores[el.dataset.essay] = el.value; });
+        if (missing) return UI.error('กรุณาให้คะแนนข้ออัตนัยให้ครบ');
+        UI.btnLoading(e.currentTarget, true, 'กำลังบันทึก...');
+        try {
+          const r = await API.call('quiz.gradeEssay', { attempt_id: x.attempt_id, scores });
+          modal.hide();
+          UI.toast(`บันทึกแล้ว: ${r.score}/${r.max_score} (${r.percent}%) ${r.passed ? 'ผ่าน' : 'ไม่ผ่าน'}`);
+          loadActivity();
+        } catch (err) { UI.error(err); UI.btnLoading(e.currentTarget, false); }
+      });
+      modal.show();
+    }
+
+    /* ---------- ตรวจงาน ---------- */
+    function openSub(subId) {
+      const item = data.items.find(i => i.submission && i.submission.submission_id === subId);
+      const s = item.submission;
+      modalHead(item.user, `ส่งเมื่อ ${UI.thaiDate(s.submitted_at, true)}`);
+      UI.$('#gBody').innerHTML = `
+        <h6 class="text-muted">งานที่ส่ง</h6>
+        <div class="vstack gap-2 mb-4">
+          ${s.file_url ? `<a class="btn btn-soft text-start" href="${UI.esc(s.file_url)}" target="_blank" rel="noopener"><i class="bi bi-file-earmark-arrow-down me-2"></i>${UI.esc(s.file_name || 'เปิดไฟล์')}</a>` : ''}
+          ${s.link_url ? `<a class="btn btn-soft text-start text-break" href="${UI.esc(s.link_url)}" target="_blank" rel="noopener"><i class="bi bi-link-45deg me-2"></i>${UI.esc(s.link_url)}</a>` : ''}
+          ${s.text_answer ? `<div class="border rounded-4 p-3 prose small">${UI.esc(s.text_answer)}</div>` : ''}
+        </div>
+        <div class="row g-3">
+          <div class="col-sm-4">
+            <label class="form-label" for="gScore">คะแนน (เต็ม ${act.settings.max_score})</label>
+            <input type="number" class="form-control form-control-lg" id="gScore" min="0" max="${act.settings.max_score}" step="0.5" value="${UI.esc(s.score)}">
+          </div>
+          <div class="col-sm-8">
+            <label class="form-label" for="gFeedback">ข้อเสนอแนะถึงผู้เข้าอบรม</label>
+            <textarea class="form-control" id="gFeedback" rows="3">${UI.esc(s.feedback || '')}</textarea>
+          </div>
+        </div>`;
+      UI.$('#gFoot').innerHTML = `<button type="button" class="btn btn-outline-danger me-auto" data-grade="revise"><i class="bi bi-arrow-repeat me-1"></i>ส่งกลับให้แก้ไข</button>
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">ยกเลิก</button>
+        <button type="button" class="btn btn-primary" data-grade="graded"><i class="bi bi-check2 me-1"></i>บันทึกคะแนน</button>`;
+      UI.$$('#gFoot [data-grade]').forEach(btn => btn.addEventListener('click', async () => {
+        const status = btn.dataset.grade;
+        if (status === 'revise' && !UI.$('#gFeedback').value.trim()) return UI.error('กรุณาเขียนข้อเสนอแนะว่าต้องแก้ไขอะไร');
+        UI.btnLoading(btn, true, 'กำลังบันทึก...');
+        try {
+          await API.call('submission.grade', { submission_id: s.submission_id, score: UI.$('#gScore').value, feedback: UI.$('#gFeedback').value, status });
+          modal.hide();
+          UI.toast(status === 'revise' ? 'ส่งกลับให้แก้ไขแล้ว' : 'บันทึกคะแนนแล้ว');
+          loadActivity();
+        } catch (err) { UI.error(err); UI.btnLoading(btn, false); }
+      }));
+      modal.show();
+    }
+
+    UI.$('#exportBtn').addEventListener('click', () => {
+      const rows = [];
+      const u = x => [x.prefix, x.first_name, x.last_name, x.position, x.organization, x.email];
+      if (act.type === 'quiz') {
+        rows.push(['คำนำหน้า', 'ชื่อ', 'นามสกุล', 'ตำแหน่ง', 'หน่วยงาน', 'อีเมล', 'ครั้งที่', 'คะแนน', 'คะแนนเต็ม', 'ร้อยละ', 'ผล', 'ส่งเมื่อ']);
+        data.attempts.forEach(x => rows.push([...u(x.user), x.attempt_no, x.score, x.max_score, x.percent,
+          x.graded_status === 'waiting' ? 'รอตรวจ' : x.passed ? 'ผ่าน' : 'ไม่ผ่าน', UI.thaiDate(x.submitted_at, true)]));
+      } else {
+        rows.push(['คำนำหน้า', 'ชื่อ', 'นามสกุล', 'ตำแหน่ง', 'หน่วยงาน', 'อีเมล', 'สถานะ', 'คะแนน', 'คะแนนเต็ม', 'ลิงก์ไฟล์', 'ลิงก์', 'ส่งเมื่อ', 'ข้อเสนอแนะ']);
+        data.items.forEach(i => { const s = i.submission; rows.push([...u(i.user), SUB_ST[s ? s.status : 'none'].label, s ? s.score : '', act.settings.max_score,
+          s ? s.file_url : '', s ? s.link_url : '', s ? UI.thaiDate(s.submitted_at, true) : '', s ? s.feedback : '']); });
+      }
+      PUI.csvDownload(`ผล_${act.title}.csv`, rows);
+    });
+  </script>
+</body>
+</html>
