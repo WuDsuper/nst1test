@@ -84,6 +84,3 @@ assets/css/style.css
 assets/js/ config.js, theme.js, utils.js, api.js, auth.js, layout.js, mock.js
 gas/      Code.gs, Db.gs, Auth.gs, Admin.gs, Mail.gs, Setup.gs, appsscript.json
 ```
-บัญชีผู้ดูแลระบบ
-อีเมล: musicroompud@gmail.com
-รหัสผ่านชั่วคราว: uk9E5aACLc
