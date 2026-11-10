@@ -110,6 +110,7 @@
               <div class="d-flex flex-wrap gap-1 mt-1">${PUI.statusBadge(p.status)}${p.pending ? `<a href="participants.html?id=${p.project_id}" class="badge-soft warning text-decoration-none"><i class="bi bi-person-exclamation"></i>รออนุมัติ ${p.pending}</a>` : ''}</div>
             </div>
             <div class="text-end"><div class="fw-bold font-prompt">${p.approved}</div><div class="small text-muted">คน</div></div>
+            <a href="reports.html?project_id=${p.project_id}" class="btn btn-sm btn-soft" title="รายงานผล" aria-label="รายงานผล"><i class="bi bi-bar-chart-line"></i></a>
           </div>
         </div>`).join('')
         : `<div class="empty-state"><div class="icon soft-purple"><i class="bi bi-folder-plus"></i></div><h6>ยังไม่มีโครงการในปีงบประมาณนี้</h6>

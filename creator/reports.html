@@ -1,0 +1,732 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>รายงานผล</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="../assets/css/style.css" rel="stylesheet">
+  <script src="../assets/js/theme.js"></script>
+</head>
+<body data-root="../">
+  <div class="app">
+    <aside class="sidebar offcanvas-lg offcanvas-start" tabindex="-1" id="sidebar"></aside>
+    <div class="app-main">
+      <header class="topbar" id="topbar"></header>
+      <main class="app-content">
+
+        <!-- ========== สรุปทุกโครงการ ========== -->
+        <section id="viewSummary" class="d-none">
+          <div class="page-head">
+            <div>
+              <h1>รายงานผลการอบรม</h1>
+              <p id="sumSub">สรุปผลทุกโครงการ เลือกโครงการเพื่อดูรายงานละเอียด</p>
+            </div>
+            <div class="d-flex flex-wrap gap-2 no-print">
+              <select class="form-select" id="fy" style="width:auto" aria-label="ปีงบประมาณ"></select>
+              <button class="btn btn-success" id="btnSumXlsx"><i class="bi bi-file-earmark-excel me-1"></i>ส่งออก Excel</button>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-4">
+            <div class="col-6 col-lg-3"><div class="card stat-card"><div class="stat-icon soft-primary"><i class="bi bi-folder2-open"></i></div><div><div class="stat-value" id="tProjects">–</div><div class="stat-label">โครงการ</div></div></div></div>
+            <div class="col-6 col-lg-3"><div class="card stat-card"><div class="stat-icon soft-info"><i class="bi bi-people"></i></div><div><div class="stat-value" id="tMembers">–</div><div class="stat-label">ผู้เข้าอบรม (คน-โครงการ)</div></div></div></div>
+            <div class="col-6 col-lg-3"><div class="card stat-card"><div class="stat-icon soft-success"><i class="bi bi-award"></i></div><div><div class="stat-value" id="tCompleted">–</div><div class="stat-label">ผ่านการอบรม</div></div></div></div>
+            <div class="col-6 col-lg-3"><div class="card stat-card"><div class="stat-icon soft-pink"><i class="bi bi-clock-history"></i></div><div><div class="stat-value" id="tHours">–</div><div class="stat-label">ชั่วโมงอบรมรวม (คน-ชม.)</div></div></div></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
+              <span><i class="bi bi-table me-2 text-primary"></i>ผลรายโครงการ</span>
+              <div class="input-group input-group-sm no-print" style="max-width:280px">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="search" class="form-control" id="sumQ" placeholder="ค้นหาโครงการ">
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-hover table-cards table-wide mb-0">
+                <thead><tr><th>โครงการ</th><th>ผู้เข้าอบรม</th><th>ผ่านการอบรม</th><th style="min-width:150px">ความก้าวหน้าเฉลี่ย</th><th>ก่อน → หลังเรียน</th><th class="text-end"></th></tr></thead>
+                <tbody id="sumBody"><tr><td colspan="6"><div class="skeleton" style="height:140px"></div></td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========== รายงานรายโครงการ ========== -->
+        <section id="viewProject" class="d-none">
+          <a href="reports.html" class="small text-decoration-none d-inline-block mb-2 no-print" id="backLink"><i class="bi bi-arrow-left me-1"></i>รายงานทุกโครงการ</a>
+          <div class="card mb-3 report-head">
+            <div class="card-body d-flex flex-wrap gap-3 align-items-center">
+              <div class="pj-thumb" id="pjThumb"></div>
+              <div class="min-w-0 flex-grow-1">
+                <div class="small text-muted" id="pjMeta"></div>
+                <h1 class="h4 mb-1" id="pjTitle">กำลังโหลด...</h1>
+                <div class="small text-muted" id="pjDates"></div>
+              </div>
+              <div class="d-flex flex-wrap gap-2 no-print">
+                <button class="btn btn-light" id="btnPrint"><i class="bi bi-printer me-1"></i>พิมพ์</button>
+                <button class="btn btn-success" id="btnXlsx" disabled><i class="bi bi-file-earmark-excel me-1"></i>ส่งออก Excel</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="tab-pills mb-3 no-print" id="tabs">
+            <button type="button" class="active" data-tab="overview"><i class="bi bi-speedometer2 me-1"></i>ภาพรวม</button>
+            <button type="button" data-tab="people"><i class="bi bi-grid-3x3-gap me-1"></i>ผลรายคน</button>
+            <button type="button" data-tab="prepost"><i class="bi bi-graph-up-arrow me-1"></i>ก่อน-หลังเรียน</button>
+            <button type="button" data-tab="acts"><i class="bi bi-list-check me-1"></i>รายกิจกรรม</button>
+          </div>
+
+          <div id="pjBody"><div class="skeleton" style="height:320px"></div></div>
+
+          <!-- ภาพรวม -->
+          <div class="tab-pane-r d-none" data-pane="overview">
+            <div class="row g-3 mb-3">
+              <div class="col-6 col-lg-3"><div class="card stat-card"><div class="stat-icon soft-primary"><i class="bi bi-people"></i></div><div><div class="stat-value" id="oMembers">–</div><div class="stat-label">ผู้เข้าอบรม</div></div></div></div>
+              <div class="col-6 col-lg-3"><div class="card stat-card"><div class="stat-icon soft-success"><i class="bi bi-award"></i></div><div><div class="stat-value" id="oCompleted">–</div><div class="stat-label" id="oCompletedL">ผ่านการอบรม</div></div></div></div>
+              <div class="col-6 col-lg-3"><div class="card stat-card"><div class="stat-icon soft-info"><i class="bi bi-bar-chart-steps"></i></div><div><div class="stat-value" id="oProgress">–</div><div class="stat-label">ความก้าวหน้าเฉลี่ย</div></div></div></div>
+              <div class="col-6 col-lg-3"><div class="card stat-card"><div class="stat-icon soft-warning"><i class="bi bi-hourglass-split"></i></div><div><div class="stat-value" id="oPending">–</div><div class="stat-label">รออนุมัติ / ยังไม่เริ่ม</div></div></div></div>
+            </div>
+            <div class="row g-3">
+              <div class="col-lg-8">
+                <div class="card h-100">
+                  <div class="card-header"><i class="bi bi-bar-chart me-2 text-primary"></i>อัตราการทำกิจกรรม</div>
+                  <div class="card-body"><div id="actChartWrap" style="height:260px"><canvas id="chartActs"></canvas></div></div>
+                </div>
+              </div>
+              <div class="col-lg-4">
+                <div class="card h-100">
+                  <div class="card-header"><i class="bi bi-pie-chart me-2 text-primary"></i>ความก้าวหน้าผู้เข้าอบรม</div>
+                  <div class="card-body">
+                    <div style="height:190px" class="mb-3"><canvas id="chartProgress"></canvas></div>
+                    <div class="vstack gap-2 small" id="progLegend"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ผลรายคน -->
+          <div class="tab-pane-r d-none" data-pane="people">
+            <div class="card">
+              <div class="card-body pb-2">
+                <div class="row g-2 align-items-center no-print">
+                  <div class="col-md-5">
+                    <div class="input-group">
+                      <span class="input-group-text"><i class="bi bi-search"></i></span>
+                      <input type="search" class="form-control" id="pQ" placeholder="ค้นหาชื่อ อีเมล หรือหน่วยงาน">
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <select class="form-select" id="pFilter" aria-label="กรองสถานะ">
+                      <option value="">ทุกสถานะ</option>
+                      <option value="completed">ผ่านการอบรม</option>
+                      <option value="active">กำลังอบรม</option>
+                      <option value="notstarted">ยังไม่เริ่ม</option>
+                    </select>
+                  </div>
+                  <div class="col-md-3 small text-muted text-md-end" id="pCount"></div>
+                </div>
+                <div class="matrix-legend small text-muted mt-2" id="legend"></div>
+              </div>
+              <div class="table-responsive matrix-wrap">
+                <table class="table table-hover matrix mb-0">
+                  <thead id="mHead"></thead>
+                  <tbody id="mBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- ก่อน-หลังเรียน -->
+          <div class="tab-pane-r d-none" data-pane="prepost">
+            <div id="ppEmpty" class="d-none"></div>
+            <div id="ppContent">
+              <div class="card mb-3 no-print">
+                <div class="card-body row g-2 align-items-end">
+                  <div class="col-md-5"><label class="form-label small mb-1" for="ppPre">แบบทดสอบก่อนเรียน (ใช้คะแนนครั้งแรก)</label><select class="form-select" id="ppPre"></select></div>
+                  <div class="col-md-5"><label class="form-label small mb-1" for="ppPost">แบบทดสอบหลังเรียน (ใช้คะแนนครั้งที่ดีที่สุด)</label><select class="form-select" id="ppPost"></select></div>
+                  <div class="col-md-2 small text-muted" id="ppN"></div>
+                </div>
+              </div>
+              <div class="row g-3 mb-3">
+                <div class="col-6 col-lg-3"><div class="card stat-card"><div class="stat-icon soft-warning"><i class="bi bi-1-circle"></i></div><div><div class="stat-value" id="ppPreM">–</div><div class="stat-label" id="ppPreS">ค่าเฉลี่ยก่อนเรียน</div></div></div></div>
+                <div class="col-6 col-lg-3"><div class="card stat-card"><div class="stat-icon soft-success"><i class="bi bi-2-circle"></i></div><div><div class="stat-value" id="ppPostM">–</div><div class="stat-label" id="ppPostS">ค่าเฉลี่ยหลังเรียน</div></div></div></div>
+                <div class="col-6 col-lg-3"><div class="card stat-card"><div class="stat-icon soft-primary"><i class="bi bi-graph-up-arrow"></i></div><div><div class="stat-value" id="ppGain">–</div><div class="stat-label">พัฒนาการเฉลี่ย</div></div></div></div>
+                <div class="col-6 col-lg-3"><div class="card stat-card"><div class="stat-icon soft-pink"><i class="bi bi-stars"></i></div><div><div class="stat-value" id="ppEI">–</div><div class="stat-label">ดัชนีประสิทธิผล (E.I.)</div></div></div></div>
+              </div>
+              <div class="card mb-3"><div class="card-body" id="ppTest"></div></div>
+              <div class="card mb-3">
+                <div class="card-header"><i class="bi bi-bar-chart-line me-2 text-primary"></i>คะแนนก่อน-หลังเรียนรายคน (%)</div>
+                <div class="card-body"><div id="ppChartWrap" style="height:300px"><canvas id="chartPP"></canvas></div></div>
+              </div>
+              <div class="card">
+                <div class="table-responsive">
+                  <table class="table table-hover table-cards mb-0">
+                    <thead><tr><th>#</th><th>ชื่อ-สกุล</th><th>ก่อนเรียน</th><th>หลังเรียน</th><th>พัฒนาการ</th></tr></thead>
+                    <tbody id="ppBody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- รายกิจกรรม -->
+          <div class="tab-pane-r d-none" data-pane="acts">
+            <div class="card mb-3">
+              <div class="table-responsive">
+                <table class="table table-hover table-cards table-wide mb-0">
+                  <thead><tr><th>กิจกรรม</th><th style="min-width:160px">ทำแล้ว</th><th>รอตรวจ</th><th>ยังไม่ทำ</th><th>คะแนนเฉลี่ย</th><th>สูงสุด / ต่ำสุด</th><th class="text-end"></th></tr></thead>
+                  <tbody id="aBody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="card d-none" id="itemCard">
+              <div class="card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                <span><i class="bi bi-clipboard-data me-2 text-primary"></i>วิเคราะห์ข้อสอบ: <b id="itemTitle"></b></span>
+                <div class="d-flex gap-2 no-print">
+                  <select class="form-select form-select-sm" id="itemPick" style="width:auto" aria-label="เลือกครั้งที่ใช้วิเคราะห์">
+                    <option value="first">ใช้ผลครั้งแรก</option>
+                    <option value="best">ใช้ผลครั้งที่ดีที่สุด</option>
+                  </select>
+                  <button class="btn btn-sm btn-success" id="btnItemXlsx"><i class="bi bi-file-earmark-excel me-1"></i>Excel</button>
+                </div>
+              </div>
+              <div class="card-body" id="itemBody"></div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/mock.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/layout.js"></script>
+  <script src="../assets/js/projects.js"></script>
+  <script src="../assets/js/reports.js"></script>
+  <script>
+    const me = Auth.require(['creator', 'admin']);
+    const pid = UI.qs('project_id');
+    const esc = UI.esc;
+    let charts = {};
+    let R = null;          // report.project
+    let S = null;          // report.summary
+    let PP = null;         // ผลเปรียบเทียบก่อน-หลังที่เลือก
+    let ITEM = null;       // report.quizItems
+    let tab = 'overview';
+
+    if (me) {
+      Layout.init(me, { active: 'reports', title: 'รายงานผล' });
+      if (pid) initProject(); else initSummary();
+      document.addEventListener('tms:theme', () => { if (R) drawTab(); });
+    }
+
+    function css(name, def) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || def; }
+    function chartBase() {
+      Chart.defaults.font.family = "'Sarabun', sans-serif";
+      Chart.defaults.color = css('--tms-muted', '#6B7280');
+      return css('--tms-border', '#E6E8F0');
+    }
+    function setChart(key, cfg) {
+      if (charts[key]) charts[key].destroy();
+      charts[key] = new Chart(UI.$('#' + key), cfg);
+    }
+    const fileDate = () => new Date().toISOString().slice(0, 10);
+
+    /* =================== สรุปทุกโครงการ =================== */
+    async function initSummary() {
+      UI.$('#viewSummary').classList.remove('d-none');
+      if (me.role === 'admin') UI.$('#sumSub').textContent = 'สรุปผลทุกโครงการในระบบ เลือกโครงการเพื่อดูรายงานละเอียด';
+      try {
+        await PUI.fillFySelect(UI.$('#fy'), { allOption: true, value: UI.qs('fy') || '' });
+        UI.$('#fy').addEventListener('change', loadSummary);
+        UI.$('#sumQ').addEventListener('input', renderSummary);
+        UI.$('#btnSumXlsx').addEventListener('click', exportSummary);
+        loadSummary();
+      } catch (err) { UI.error(err); }
+    }
+
+    async function loadSummary() {
+      UI.$('#sumBody').innerHTML = '<tr><td colspan="6"><div class="skeleton" style="height:140px"></div></td></tr>';
+      try {
+        S = await API.call('report.summary', { fy_id: UI.$('#fy').value });
+        const t = S.totals;
+        UI.$('#tProjects').textContent = t.projects;
+        UI.$('#tMembers').textContent = t.members;
+        UI.$('#tCompleted').innerHTML = `${t.completed} <span class="fs-6 text-muted fw-normal">(${RPT.pct(t.completion_rate, 0)})</span>`;
+        UI.$('#tHours').textContent = RPT.num(t.hours, 1);
+        renderSummary();
+      } catch (err) { UI.error(err); }
+    }
+
+    function renderSummary() {
+      const q = UI.$('#sumQ').value.trim().toLowerCase();
+      const list = S.projects.filter(p => !q || (p.title + ' ' + p.code + ' ' + p.owner_name).toLowerCase().includes(q));
+      if (!list.length) {
+        UI.$('#sumBody').innerHTML = `<tr><td colspan="6" data-label=""><div class="empty-state"><div class="icon soft-purple"><i class="bi bi-bar-chart-line"></i></div><h5>${S.projects.length ? 'ไม่พบโครงการที่ค้นหา' : 'ยังไม่มีโครงการในปีงบประมาณนี้'}</h5></div></td></tr>`;
+        return;
+      }
+      UI.$('#sumBody').innerHTML = list.map(p => `<tr>
+        <td data-label="" class="td-main">
+          <a href="reports.html?project_id=${p.project_id}" class="fw-semibold text-decoration-none text-body d-block">${esc(p.title)}</a>
+          <div class="small text-muted">${esc(p.code)} · ปีงบ ${esc(p.fy_year)}${me.role === 'admin' && p.owner_name ? ' · ' + esc(p.owner_name) : ''} · ${PUI.statusBadge(p.status)}</div>
+        </td>
+        <td data-label="ผู้เข้าอบรม"><b>${p.members}</b> <span class="small text-muted">คน</span>${p.counts.pending ? ` <span class="badge-soft warning">รออนุมัติ ${p.counts.pending}</span>` : ''}</td>
+        <td data-label="ผ่านการอบรม"><b>${p.counts.completed || 0}</b> <span class="small text-muted">(${RPT.pct(p.completion_rate, 0)})</span></td>
+        <td data-label="ความก้าวหน้าเฉลี่ย"><div class="d-flex align-items-center gap-2"><div class="flex-grow-1">${PUI.progressBar(Math.round(p.avg_progress), 6)}</div><span class="small">${RPT.pct(p.avg_progress, 0)}</span></div></td>
+        <td data-label="ก่อน → หลังเรียน" class="text-nowrap">${p.prepost_n ? `${RPT.pct(p.pre_mean, 0)} → ${RPT.pct(p.post_mean, 0)} ${RPT.gainBadge(p.gain_mean)}` : '<span class="text-muted small">-</span>'}</td>
+        <td data-label="" class="text-end td-actions text-nowrap"><a href="reports.html?project_id=${p.project_id}" class="btn btn-sm btn-soft"><i class="bi bi-bar-chart-line me-1"></i>ดูรายงาน</a></td>
+      </tr>`).join('');
+    }
+
+    async function exportSummary() {
+      if (!S) return;
+      const btn = UI.$('#btnSumXlsx');
+      UI.btnLoading(btn, true, 'กำลังสร้างไฟล์...');
+      try {
+        const fyText = UI.$('#fy').selectedOptions[0] ? UI.$('#fy').selectedOptions[0].textContent : '';
+        const rows = [
+          ['รายงานสรุปผลการอบรม ' + fyText],
+          ['ออกรายงานเมื่อ', UI.thaiDate(S.generated_at, true)],
+          [],
+          ['ลำดับ', 'รหัส', 'ชื่อโครงการ', 'ปีงบประมาณ', 'ผู้รับผิดชอบ', 'สถานะ', 'ช่วงอบรม', 'ชั่วโมง', 'จำนวนรับ', 'กิจกรรม',
+            'ผู้เข้าอบรม', 'รออนุมัติ', 'ผ่านการอบรม', 'อัตราผ่าน (%)', 'ความก้าวหน้าเฉลี่ย (%)', 'Pre-test เฉลี่ย (%)', 'Post-test เฉลี่ย (%)', 'พัฒนาการ (%)', 'E.I.', 'จำนวนคู่ Pre/Post']
+        ];
+        S.projects.forEach((p, i) => rows.push([i + 1, p.code, p.title, p.fy_year, p.owner_name, (PUI.STATUS[p.status] || {}).label || p.status,
+          PUI.dateRange(p.start_date, p.end_date), Number(p.hours) || '', Number(p.capacity) || '', p.activities,
+          p.members, p.counts.pending || 0, p.counts.completed || 0, p.completion_rate, p.avg_progress,
+          p.pre_mean ?? '', p.post_mean ?? '', p.gain_mean ?? '', p.ei ?? '', p.prepost_n || '']));
+        const t = S.totals;
+        rows.push([], ['รวม', '', t.projects + ' โครงการ', '', '', '', '', '', '', '', t.members, t.pending, t.completed, t.completion_rate]);
+        await RPT.exportXlsx(`รายงานสรุป_${fyText}_${fileDate()}`, [{ name: 'สรุปรายโครงการ', rows, merges: [{ s: { r: 0, c: 0 }, e: { r: 0, c: 8 } }] }]);
+      } catch (err) { UI.error(err); }
+      UI.btnLoading(btn, false);
+    }
+
+    /* =================== รายงานรายโครงการ =================== */
+    async function initProject() {
+      UI.$('#viewProject').classList.remove('d-none');
+      UI.$('#tabs').addEventListener('click', e => {
+        const b = e.target.closest('[data-tab]');
+        if (!b || !R) return;
+        tab = b.dataset.tab;
+        UI.$$('#tabs button').forEach(x => x.classList.toggle('active', x === b));
+        drawTab();
+      });
+      UI.$('#btnPrint').addEventListener('click', () => window.print());
+      UI.$('#btnXlsx').addEventListener('click', exportProject);
+      UI.$('#pQ').addEventListener('input', renderMatrix);
+      UI.$('#pFilter').addEventListener('change', renderMatrix);
+      UI.$('#ppPre').addEventListener('change', renderPrePost);
+      UI.$('#ppPost').addEventListener('change', renderPrePost);
+      UI.$('#itemPick').addEventListener('change', () => ITEM && loadItems(ITEM.activity.activity_id, UI.$('#itemPick').value));
+      UI.$('#btnItemXlsx').addEventListener('click', exportItems);
+      UI.$('#aBody').addEventListener('click', e => {
+        const b = e.target.closest('[data-items]');
+        if (b) loadItems(b.dataset.items);
+      });
+      const t = UI.qs('tab');
+      if (t && UI.$(`#tabs [data-tab="${t}"]`)) { tab = t; UI.$$('#tabs button').forEach(x => x.classList.toggle('active', x.dataset.tab === t)); }
+
+      try {
+        R = await API.call('report.project', { project_id: pid });
+      } catch (err) {
+        UI.$('#pjBody').innerHTML = `<div class="card"><div class="empty-state"><div class="icon soft-danger"><i class="bi bi-exclamation-triangle"></i></div><h5>${esc(err.message || 'โหลดรายงานไม่สำเร็จ')}</h5><a href="reports.html" class="btn btn-primary mt-2">กลับไปหน้ารายงาน</a></div></div>`;
+        UI.$('#pjTitle').textContent = 'ไม่พบรายงาน';
+        return;
+      }
+      const p = R.project;
+      document.title = 'รายงาน: ' + p.title;
+      UI.$('#backLink').href = 'reports.html?fy=' + encodeURIComponent(p.fy_id);
+      UI.$('#pjThumb').innerHTML = PUI.cover(p);
+      UI.$('#pjMeta').innerHTML = `${esc(p.code)} · ปีงบประมาณ ${esc(p.fy_year)} · ${PUI.statusBadge(p.status)}`;
+      UI.$('#pjTitle').textContent = p.title;
+      UI.$('#pjDates').innerHTML = `<i class="bi bi-calendar-event me-1"></i>${PUI.dateRange(p.start_date, p.end_date)}${p.hours ? ' · ' + esc(p.hours) + ' ชั่วโมง' : ''} · ผู้รับผิดชอบ ${esc(p.owner_name || '-')} · ออกรายงาน ${UI.thaiDate(R.generated_at, true)}`;
+      UI.$('#pjBody').remove();
+      UI.$('#btnXlsx').disabled = false;
+
+      // ตัวเลือก Pre/Post
+      const quizzes = R.activities.filter(a => a.type === 'quiz');
+      const opts = quizzes.map(a => `<option value="${a.activity_id}">${esc(a.order_no + '. ' + a.title)}${a.quiz_kind !== 'general' ? ' (' + (a.quiz_kind === 'pre' ? 'Pre-test' : 'Post-test') + ')' : ''}</option>`).join('');
+      UI.$('#ppPre').innerHTML = opts;
+      UI.$('#ppPost').innerHTML = opts;
+      const pre = R.prepost.pre_id || (quizzes[0] && quizzes[0].activity_id) || '';
+      const post = R.prepost.post_id || (quizzes.find(a => a.activity_id !== pre) || {}).activity_id || '';
+      UI.$('#ppPre').value = pre;
+      UI.$('#ppPost').value = post;
+      drawTab();
+    }
+
+    function drawTab() {
+      UI.$$('.tab-pane-r').forEach(el => el.classList.toggle('d-none', el.dataset.pane !== tab));
+      const u = new URL(location.href);
+      u.searchParams.set('tab', tab);
+      history.replaceState(null, '', u);
+      if (tab === 'overview') renderOverview();
+      else if (tab === 'people') renderMatrix();
+      else if (tab === 'prepost') renderPrePost();
+      else renderActs();
+    }
+
+    function emptyMembers(el) {
+      el.innerHTML = `<div class="card"><div class="empty-state"><div class="icon soft-primary"><i class="bi bi-people"></i></div><h5>ยังไม่มีผู้เข้าอบรมที่ได้รับอนุมัติ</h5><p>เมื่อมีผู้เข้าอบรมทำกิจกรรม ผลจะแสดงที่นี่</p><a href="participants.html?id=${pid}" class="btn btn-primary"><i class="bi bi-person-check me-1"></i>จัดการผู้เข้าร่วม</a></div></div>`;
+    }
+
+    /* ---------- ภาพรวม ---------- */
+    function renderOverview() {
+      const s = R.summary;
+      UI.$('#oMembers').textContent = s.members;
+      UI.$('#oCompleted').innerHTML = `${s.counts.completed || 0} <span class="fs-6 text-muted fw-normal">(${RPT.pct(s.completion_rate, 0)})</span>`;
+      UI.$('#oCompletedL').textContent = `ผ่านการอบรม (เกณฑ์ ${s.pass_criteria}%)`;
+      UI.$('#oProgress').textContent = RPT.pct(s.avg_progress, 0);
+      UI.$('#oPending').textContent = `${s.counts.pending || 0} / ${s.not_started}`;
+
+      const grid = chartBase();
+      const acts = R.activities;
+      const st = Object.fromEntries(R.activity_stats.map(x => [x.activity_id, x]));
+      UI.$('#actChartWrap').style.height = Math.max(200, 70 + acts.length * 46) + 'px';
+      const series = [
+        { label: 'ทำแล้ว', key: x => x.done, color: css('--tms-success', '#10B981') },
+        { label: 'รอตรวจ', key: x => x.review, color: css('--tms-warning', '#F59E0B') },
+        { label: 'กำลังทำ / ยังไม่ผ่าน', key: x => x.inprogress + x.failed + x.revise, color: '#F97316' },
+        { label: 'ยังไม่ทำ', key: x => x.todo, color: grid }
+      ];
+      setChart('chartActs', {
+        type: 'bar',
+        data: {
+          labels: acts.map(a => (a.order_no + '. ' + a.title).slice(0, 38)),
+          datasets: series.map(s => ({ label: s.label, data: acts.map(a => s.key(st[a.activity_id])), backgroundColor: s.color, borderRadius: 6, barThickness: 22 }))
+        },
+        options: {
+          indexAxis: 'y', maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, usePointStyle: true } }, tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${c.parsed.x} คน` } } },
+          scales: { x: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: grid }, max: s.members || undefined }, y: { stacked: true, grid: { display: false } } }
+        }
+      });
+
+      const rows = R.rows;
+      const buckets = [
+        { label: 'ทำครบ 100%', color: css('--tms-success', '#10B981'), n: rows.filter(r => r.progress.total && r.progress.percent >= 100).length },
+        { label: 'ตั้งแต่ 50% ขึ้นไป', color: css('--tms-primary', '#4F46E5'), n: rows.filter(r => r.progress.percent >= 50 && r.progress.percent < 100).length },
+        { label: 'ต่ำกว่า 50%', color: css('--tms-warning', '#F59E0B'), n: rows.filter(r => r.progress.percent > 0 && r.progress.percent < 50).length },
+        { label: 'ยังไม่มีความก้าวหน้า', color: grid, n: rows.filter(r => !r.progress.percent).length }
+      ];
+      setChart('chartProgress', {
+        type: 'doughnut',
+        data: { labels: buckets.map(b => b.label), datasets: [{ data: buckets.map(b => b.n), backgroundColor: buckets.map(b => b.color), borderWidth: 0, hoverOffset: 6 }] },
+        options: { maintainAspectRatio: false, cutout: '68%', plugins: { legend: { display: false } } }
+      });
+      UI.$('#progLegend').innerHTML = buckets.map(b => `<div class="d-flex align-items-center gap-2"><span style="width:10px;height:10px;border-radius:3px;background:${b.color}"></span><span class="flex-grow-1">${b.label}</span><b>${b.n}</b> คน</div>`).join('');
+    }
+
+    /* ---------- ผลรายคน ---------- */
+    function rowStatus(r) {
+      if (r.enroll_status === 'completed') return 'completed';
+      return Object.values(r.cells).every(c => c.state === 'todo') ? 'notstarted' : 'active';
+    }
+    function renderMatrix() {
+      const acts = R.activities;
+      UI.$('#legend').innerHTML = ['done', 'submitted', 'review', 'inprogress', 'failed', 'revise', 'todo']
+        .map(k => `<span><i class="bi bi-${RPT.STATE_ICON[k].icon} ${RPT.STATE_ICON[k].cls}"></i> ${PUI.MY[k].label}</span>`).join('');
+      UI.$('#mHead').innerHTML = `<tr><th class="m-name">ผู้เข้าอบรม</th>${acts.map(a => `<th class="m-act" title="${esc(a.title)}"><div class="d-flex flex-column align-items-center gap-1"><i class="bi bi-${PUI.ACT[a.type].icon}"></i><span>${esc(a.order_no + '. ' + a.title)}</span>${a.is_required ? '' : '<span class="badge-soft secondary">ไม่บังคับ</span>'}</div></th>`).join('')}<th class="text-center">ความก้าวหน้า</th><th>สถานะ</th></tr>`;
+      if (!R.rows.length) {
+        UI.$('#mBody').innerHTML = `<tr><td colspan="${acts.length + 3}"><div class="empty-state"><div class="icon soft-primary"><i class="bi bi-people"></i></div><h5>ยังไม่มีผู้เข้าอบรมที่ได้รับอนุมัติ</h5><a href="participants.html?id=${pid}" class="btn btn-primary mt-2">จัดการผู้เข้าร่วม</a></div></td></tr>`;
+        UI.$('#pCount').textContent = '';
+        return;
+      }
+      const q = UI.$('#pQ').value.trim().toLowerCase();
+      const f = UI.$('#pFilter').value;
+      const list = R.rows.filter(r => (!q || (r.name + ' ' + r.email + ' ' + r.organization).toLowerCase().includes(q)) && (!f || rowStatus(r) === f));
+      UI.$('#pCount').textContent = `แสดง ${list.length} จาก ${R.rows.length} คน`;
+      UI.$('#mBody').innerHTML = list.length ? list.map(r => `<tr>
+        <td class="m-name"><div class="fw-semibold">${esc(r.name)}</div><div class="small text-muted text-truncate" style="max-width:220px">${esc(r.organization || r.email)}</div></td>
+        ${acts.map(a => `<td class="text-center">${RPT.cellHtml(r.cells[a.activity_id], a)}</td>`).join('')}
+        <td class="text-center"><div class="small fw-semibold">${r.progress.percent}%</div><div style="min-width:70px">${PUI.progressBar(r.progress.percent, 5)}</div></td>
+        <td>${PUI.enrollBadge(r.enroll_status)}</td>
+      </tr>`).join('') : `<tr><td colspan="${acts.length + 3}" class="text-center text-muted py-4">ไม่พบผู้เข้าอบรมที่ค้นหา</td></tr>`;
+    }
+
+    /* ---------- ก่อน-หลังเรียน ---------- */
+    function renderPrePost() {
+      const quizzes = R.activities.filter(a => a.type === 'quiz');
+      const empty = UI.$('#ppEmpty');
+      if (quizzes.length < 2 || !R.rows.length) {
+        UI.$('#ppContent').classList.add('d-none');
+        empty.classList.remove('d-none');
+        empty.innerHTML = `<div class="card"><div class="empty-state"><div class="icon soft-purple"><i class="bi bi-graph-up-arrow"></i></div>
+          <h5>${quizzes.length < 2 ? 'ต้องมีแบบทดสอบที่เผยแพร่แล้วอย่างน้อย 2 ชุด' : 'ยังไม่มีผู้เข้าอบรม'}</h5>
+          <p>สร้างแบบทดสอบ แล้วตั้งค่าประเภทเป็น "แบบทดสอบก่อนเรียน" และ "แบบทดสอบหลังเรียน" ในหน้ากิจกรรม</p>
+          <a href="activities.html?project_id=${pid}" class="btn btn-primary"><i class="bi bi-list-check me-1"></i>ไปหน้ากิจกรรม</a></div></div>`;
+        PP = null;
+        return;
+      }
+      UI.$('#ppContent').classList.remove('d-none');
+      empty.classList.add('d-none');
+      const preId = UI.$('#ppPre').value, postId = UI.$('#ppPost').value;
+      if (preId === postId) {
+        PP = null;
+        UI.$('#ppTest').innerHTML = '<div class="text-warning"><i class="bi bi-exclamation-triangle me-1"></i>กรุณาเลือกแบบทดสอบก่อนเรียนและหลังเรียนคนละชุดกัน</div>';
+        return;
+      }
+      PP = RPT.prepost(R.rows, preId, postId);
+      PP.preAct = quizzes.find(a => a.activity_id === preId);
+      PP.postAct = quizzes.find(a => a.activity_id === postId);
+      UI.$('#ppN').innerHTML = `ทำครบทั้ง 2 ครั้ง <b>${PP.n}</b> คน<br>ทำก่อน ${PP.pre_taken} · หลัง ${PP.post_taken}`;
+      UI.$('#ppPreM').textContent = RPT.pct(PP.pre_mean);
+      UI.$('#ppPreS').textContent = 'ค่าเฉลี่ยก่อนเรียน' + (PP.pre_sd !== null ? ` (S.D. ${RPT.num(PP.pre_sd)})` : '');
+      UI.$('#ppPostM').textContent = RPT.pct(PP.post_mean);
+      UI.$('#ppPostS').textContent = 'ค่าเฉลี่ยหลังเรียน' + (PP.post_sd !== null ? ` (S.D. ${RPT.num(PP.post_sd)})` : '');
+      UI.$('#ppGain').innerHTML = PP.gain_mean === null ? '-' : `<span class="${PP.gain_mean > 0 ? 'text-success' : PP.gain_mean < 0 ? 'text-danger' : ''}">${PP.gain_mean > 0 ? '+' : ''}${RPT.num(PP.gain_mean, 1)}%</span>`;
+      UI.$('#ppEI').textContent = PP.ei === null ? '-' : RPT.num(PP.ei, 4);
+
+      let verdict;
+      if (PP.n < 2) verdict = '<span class="text-muted">ต้องมีผู้ทำแบบทดสอบครบทั้งก่อนและหลังเรียนอย่างน้อย 2 คน จึงจะทดสอบทางสถิติได้</span>';
+      else if (PP.t === null) verdict = `<span class="text-muted">ผลต่างของทุกคนเท่ากัน (${RPT.num(PP.gain_mean, 1)}%) จึงคำนวณค่า t ไม่ได้</span>`;
+      else {
+        const sig = PP.p !== null && PP.p < 0.05;
+        verdict = `<div class="d-flex flex-wrap gap-3 align-items-center mb-2">
+            <span class="badge-soft ${sig ? (PP.t > 0 ? 'success' : 'danger') : 'secondary'} fs-6"><i class="bi bi-${sig ? 'patch-check' : 'dash-circle'}"></i>${sig ? 'แตกต่างอย่างมีนัยสำคัญ' : 'ไม่แตกต่างอย่างมีนัยสำคัญ'}</span>
+            <span>t = <b>${RPT.num(PP.t, 3)}</b></span><span>df = <b>${PP.df}</b></span><span><b>${RPT.pText(PP.p)}</b></span>
+          </div>
+          <div>${sig ? `คะแนนหลังเรียน${PP.t > 0 ? 'สูงกว่า' : 'ต่ำกว่า'}ก่อนเรียนอย่างมีนัยสำคัญทางสถิติที่ระดับ .05` : 'คะแนนก่อนและหลังเรียนไม่แตกต่างกันอย่างมีนัยสำคัญทางสถิติที่ระดับ .05'}</div>`;
+      }
+      UI.$('#ppTest').innerHTML = `<h6 class="mb-2"><i class="bi bi-calculator me-2 text-primary"></i>การทดสอบค่าที (t-test แบบไม่อิสระ)</h6>${verdict}
+        <div class="small text-muted mt-2">คะแนนเพิ่มขึ้น ${PP.improved} คน · เท่าเดิม ${PP.same} คน · ลดลง ${PP.declined} คน
+        ${PP.ei !== null ? ` · E.I. = ${RPT.num(PP.ei, 4)} หมายถึงผู้เข้าอบรมมีความรู้เพิ่มขึ้นร้อยละ ${RPT.num(PP.ei * 100, 2)}` : ''}</div>`;
+
+      const pairs = PP.pairs;
+      const grid = chartBase();
+      UI.$('#ppChartWrap').style.height = Math.max(260, Math.min(520, 120 + pairs.length * 12)) + 'px';
+      setChart('chartPP', {
+        type: 'bar',
+        data: {
+          labels: pairs.map(p => p.name),
+          datasets: [
+            { label: 'ก่อนเรียน', data: pairs.map(p => p.pre ? p.pre.percent : null), backgroundColor: css('--tms-warning', '#F59E0B'), borderRadius: 5, maxBarThickness: 28 },
+            { label: 'หลังเรียน', data: pairs.map(p => p.post ? p.post.percent : null), backgroundColor: css('--tms-success', '#10B981'), borderRadius: 5, maxBarThickness: 28 }
+          ]
+        },
+        options: {
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, usePointStyle: true } }, tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${RPT.num(c.parsed.y, 1)}%` } } },
+          scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' }, grid: { color: grid } }, x: { grid: { display: false }, ticks: { autoSkip: false, maxRotation: 60 } } }
+        }
+      });
+
+      const sc = x => x ? `<b>${RPT.num(x.score)}</b><span class="text-muted">/${RPT.num(x.max)}</span> <span class="small text-muted">(${RPT.num(x.percent, 1)}%)</span>` : '<span class="text-muted">ยังไม่ได้ทำ</span>';
+      UI.$('#ppBody').innerHTML = pairs.map((p, i) => `<tr>
+        <td data-label="#" class="text-muted">${i + 1}</td>
+        <td data-label="" class="td-main"><div class="fw-semibold">${esc(p.name)}</div><div class="small text-muted">${esc(p.organization || '')}</div></td>
+        <td data-label="ก่อนเรียน">${sc(p.pre)}</td>
+        <td data-label="หลังเรียน">${sc(p.post)}</td>
+        <td data-label="พัฒนาการ">${RPT.gainBadge(p.gain)}</td>
+      </tr>`).join('');
+    }
+
+    /* ---------- รายกิจกรรม ---------- */
+    function renderActs() {
+      const st = Object.fromEntries(R.activity_stats.map(x => [x.activity_id, x]));
+      if (!R.activities.length) {
+        UI.$('#aBody').innerHTML = `<tr><td colspan="7" data-label=""><div class="empty-state"><div class="icon soft-purple"><i class="bi bi-list-check"></i></div><h5>ยังไม่มีกิจกรรมที่เผยแพร่</h5><a href="activities.html?project_id=${pid}" class="btn btn-primary mt-2">ไปหน้ากิจกรรม</a></div></td></tr>`;
+        return;
+      }
+      UI.$('#aBody').innerHTML = R.activities.map(a => {
+        const s = st[a.activity_id];
+        const pct = s.participants ? Math.round(s.done / s.participants * 100) : 0;
+        const scored = a.type !== 'content';
+        return `<tr>
+          <td data-label="" class="td-main"><div class="d-flex align-items-center gap-2">${PUI.actIcon(a.type, 'sm')}<div class="min-w-0">
+            <div class="fw-semibold">${esc(a.order_no + '. ' + a.title)}</div>
+            <div class="small text-muted">${PUI.ACT[a.type].label}${a.quiz_kind && a.quiz_kind !== 'general' ? ' · ' + (a.quiz_kind === 'pre' ? 'Pre-test' : 'Post-test') : ''}${a.is_required ? '' : ' · ไม่บังคับ'}</div></div></div></td>
+          <td data-label="ทำแล้ว"><div class="d-flex align-items-center gap-2"><div class="flex-grow-1">${PUI.progressBar(pct, 6)}</div><span class="small text-nowrap">${s.done}/${s.participants}</span></div></td>
+          <td data-label="รอตรวจ">${s.review ? `<a href="grading.html?id=${a.activity_id}" class="badge-soft warning text-decoration-none">${s.review}</a>` : '<span class="text-muted">0</span>'}</td>
+          <td data-label="ยังไม่ทำ">${s.todo}</td>
+          <td data-label="คะแนนเฉลี่ย">${scored && s.scored ? `<b>${RPT.pct(s.avg_percent)}</b> <span class="small text-muted">(${s.scored} คน)</span>` : '<span class="text-muted">-</span>'}</td>
+          <td data-label="สูงสุด / ต่ำสุด" class="text-nowrap">${scored && s.scored ? `${RPT.pct(s.max_percent, 0)} / ${RPT.pct(s.min_percent, 0)}` : '<span class="text-muted">-</span>'}</td>
+          <td data-label="" class="text-end td-actions text-nowrap">${a.type === 'quiz' ? `<button class="btn btn-sm btn-soft" data-items="${a.activity_id}"><i class="bi bi-clipboard-data me-1"></i>วิเคราะห์ข้อสอบ</button>` : ''}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    async function loadItems(activityId, pick) {
+      const card = UI.$('#itemCard');
+      card.classList.remove('d-none');
+      UI.$('#itemBody').innerHTML = '<div class="skeleton" style="height:200px"></div>';
+      card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      try {
+        ITEM = await API.call('report.quizItems', { activity_id: activityId, pick });
+        UI.$('#itemPick').value = ITEM.pick;
+        renderItems();
+      } catch (err) { UI.$('#itemBody').innerHTML = ''; UI.error(err); }
+    }
+
+    function optLabel(it, j) {
+      return it.type === 'truefalse' ? (j === 0 ? 'ถูก' : 'ผิด') : (it.options[j] || '');
+    }
+
+    function renderItems() {
+      const d = ITEM;
+      UI.$('#itemTitle').textContent = d.activity.title;
+      if (!d.takers) {
+        UI.$('#itemBody').innerHTML = '<div class="text-center text-muted py-4"><i class="bi bi-inbox me-1"></i>ยังไม่มีผู้ทำแบบทดสอบนี้</div>';
+        return;
+      }
+      const stat = (v, l) => `<div class="col-6 col-md-3"><div class="mini-stat"><div class="v">${v}</div><div class="l">${l}</div></div></div>`;
+      UI.$('#itemBody').innerHTML = `
+        <div class="row g-2 mb-3">
+          ${stat(d.takers + ' คน', 'ผู้ทำแบบทดสอบ')}
+          ${stat(RPT.pct(d.mean) + (d.sd !== null ? ` <small class="text-muted">S.D. ${RPT.num(d.sd)}</small>` : ''), 'คะแนนเฉลี่ย')}
+          ${stat(RPT.pct(d.max, 0) + ' / ' + RPT.pct(d.min, 0), 'สูงสุด / ต่ำสุด')}
+          ${stat(`${d.passed} คน <small class="text-muted">(${RPT.pct(d.passed / d.takers * 100, 0)})</small>`, `ผ่านเกณฑ์ ${d.activity.pass_score_pct}%`)}
+        </div>
+        <div class="row g-3 mb-3">
+          <div class="col-lg-6"><h6 class="small fw-semibold mb-2">การกระจายของคะแนน (%)</h6><div style="height:200px"><canvas id="chartHist"></canvas></div></div>
+          <div class="col-lg-6">
+            <h6 class="small fw-semibold mb-2">เกณฑ์การแปลผล</h6>
+            <div class="mini-stat small">
+              <div class="mb-2"><b>p</b> ค่าความยาก = สัดส่วนผู้ตอบถูก · 0.20–0.80 เหมาะสม · มากกว่า 0.80 ง่ายมาก · ต่ำกว่า 0.20 ยากมาก</div>
+              <div class="mb-2"><b>r</b> อำนาจจำแนก = สัดส่วนตอบถูกของกลุ่มสูง − กลุ่มต่ำ (27%${d.group_size ? ` กลุ่มละ ${d.group_size} คน` : ''}) · ตั้งแต่ 0.20 ขึ้นไปใช้ได้</div>
+              <div class="text-muted">ข้อสอบ "ใช้ได้" เมื่อ p อยู่ระหว่าง 0.20–0.80 และ r ตั้งแต่ 0.20${d.group_size ? '' : '<br><i class="bi bi-info-circle me-1"></i>ต้องมีผู้ทำอย่างน้อย 4 คน จึงคำนวณค่า r ได้'}</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div>
+            <div class="table-responsive">
+              <table class="table table-sm align-middle item-table mb-0">
+                <thead><tr><th>ข้อ</th><th>คำถาม / การเลือกตอบ</th><th class="text-center">ตอบถูก</th><th class="text-center">p</th><th class="text-center">r</th><th>แปลผล</th></tr></thead>
+                <tbody>${d.items.map(it => {
+                  const dif = RPT.difficulty(it.p), dis = RPT.discrimination(it.r), v = RPT.itemVerdict(it);
+                  let detail = '';
+                  if (it.distribution) {
+                    const tot = Math.max(1, d.takers);
+                    detail = it.distribution.map((n, j) => {
+                      const right = (it.answer || []).map(Number).includes(j);
+                      return `<div class="opt-dist ${right ? 'right' : ''}"><span class="lbl">${right ? '<i class="bi bi-check-circle-fill text-success me-1"></i>' : ''}${esc(optLabel(it, j))}</span><span class="bar"><span style="width:${Math.round(n / tot * 100)}%"></span></span><span class="n">${n}</span></div>`;
+                    }).join('');
+                  } else if (it.top_answers) {
+                    detail = `<div class="small text-muted">คำตอบที่ยอมรับ: ${esc((it.answer || []).join(', '))}</div>` +
+                      (it.top_answers.length ? `<div class="small">คำตอบที่พบบ่อย: ${it.top_answers.map(t => `${esc(t.text)} <span class="text-muted">(${t.count})</span>`).join(', ')}</div>` : '');
+                  } else if (it.type === 'essay') {
+                    detail = `<div class="small text-muted">อัตนัย · คะแนนเฉลี่ย ${RPT.num(it.avg_earned)} จาก ${it.score}</div>`;
+                  }
+                  return `<tr>
+                    <td class="fw-semibold">${it.no}</td>
+                    <td style="min-width:260px"><div class="mb-1">${esc(it.question_text)}</div>${detail}</td>
+                    <td class="text-center text-nowrap">${it.type === 'essay' ? '-' : `${it.correct}/${d.takers}`}</td>
+                    <td class="text-center"><span class="badge-soft ${dif.cls}" title="${dif.label}">${it.p === null ? '-' : it.p.toFixed(2)}</span></td>
+                    <td class="text-center"><span class="badge-soft ${dis.cls}" title="${dis.label}">${it.r === null ? '-' : it.r.toFixed(2)}</span></td>
+                    <td class="small text-nowrap">${RPT.badge(v.label, v.cls)}<div class="text-muted mt-1">${dif.label}</div></td>
+                  </tr>`;
+                }).join('')}</tbody>
+              </table>
+            </div>
+          </div>
+        </div>`;
+      const grid = chartBase();
+      setChart('chartHist', {
+        type: 'bar',
+        data: { labels: d.histogram.map((_, i) => i === 9 ? '90–100' : `${i * 10}–${i * 10 + 9}`), datasets: [{ data: d.histogram, backgroundColor: css('--tms-primary', '#4F46E5'), borderRadius: 4 }] },
+        options: { maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { title: c => `คะแนน ${c[0].label}%`, label: c => ` ${c.parsed.y} คน` } } },
+          scales: { y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: grid } }, x: { grid: { display: false }, ticks: { font: { size: 10 } } } } }
+      });
+    }
+
+    /* ---------- ส่งออก Excel ---------- */
+    async function exportProject() {
+      const btn = UI.$('#btnXlsx');
+      UI.btnLoading(btn, true, 'กำลังสร้างไฟล์...');
+      try {
+        const p = R.project, s = R.summary, acts = R.activities, rows = R.rows;
+        const sheets = [];
+        sheets.push({ name: 'สรุป', cols: [{ wch: 28 }, { wch: 60 }], rows: [
+          ['รายงานผลการอบรม'], [],
+          ['ชื่อโครงการ', p.title], ['รหัสโครงการ', p.code], ['ปีงบประมาณ', p.fy_year], ['ผู้รับผิดชอบ', p.owner_name],
+          ['ช่วงอบรม', PUI.dateRange(p.start_date, p.end_date)], ['จำนวนชั่วโมง', Number(p.hours) || ''], ['เกณฑ์ผ่าน (% กิจกรรมบังคับ)', s.pass_criteria], [],
+          ['ผู้เข้าอบรม (คน)', s.members], ['ผ่านการอบรม (คน)', s.counts.completed || 0], ['อัตราการผ่าน (%)', s.completion_rate],
+          ['ความก้าวหน้าเฉลี่ย (%)', s.avg_progress], ['ยังไม่เริ่มทำกิจกรรม (คน)', s.not_started], ['รออนุมัติ (คน)', s.counts.pending || 0], [],
+          ['ออกรายงานเมื่อ', UI.thaiDate(R.generated_at, true)]
+        ] });
+
+        const head = ['ลำดับ', 'ชื่อ-สกุล', 'อีเมล', 'ตำแหน่ง', 'หน่วยงาน'];
+        acts.forEach(a => {
+          const max = RPT.actMax(a, rows);
+          head.push(`${a.order_no}. ${a.title}${max ? ` (เต็ม ${max})` : ''}${a.quiz_kind === 'pre' ? ' [ครั้งแรก]' : a.type === 'quiz' ? ' [ดีที่สุด]' : ''}`);
+        });
+        head.push('กิจกรรมบังคับที่ทำแล้ว', 'ความก้าวหน้า (%)', 'สถานะ', 'วันที่ผ่านการอบรม');
+        const mrows = [head];
+        rows.forEach((r, i) => mrows.push([i + 1, r.name, r.email, r.position, r.organization,
+          ...acts.map(a => RPT.cellValue(r.cells[a.activity_id], a)),
+          `${r.progress.done}/${r.progress.total}`, r.progress.percent, (PUI.ENROLL[r.enroll_status] || {}).label || r.enroll_status,
+          r.completed_at ? UI.thaiDate(r.completed_at) : '']));
+        sheets.push({ name: 'ผลรายคน', rows: mrows });
+
+        const st = Object.fromEntries(R.activity_stats.map(x => [x.activity_id, x]));
+        const arows = [['ลำดับ', 'กิจกรรม', 'ประเภท', 'บังคับ', 'ผู้เข้าอบรม', 'ทำแล้ว', 'รอตรวจ', 'กำลังทำ/ยังไม่ผ่าน/ให้แก้ไข', 'ยังไม่ทำ', 'อัตราการทำ (%)', 'คะแนนเฉลี่ย (%)', 'สูงสุด (%)', 'ต่ำสุด (%)']];
+        acts.forEach(a => {
+          const x = st[a.activity_id];
+          arows.push([a.order_no, a.title, PUI.ACT[a.type].label + (a.quiz_kind && a.quiz_kind !== 'general' ? ` (${a.quiz_kind === 'pre' ? 'Pre-test' : 'Post-test'})` : ''), a.is_required ? 'ใช่' : 'ไม่',
+            x.participants, x.done, x.review, x.inprogress + x.failed + x.revise, x.todo, x.participants ? Math.round(x.done / x.participants * 10000) / 100 : 0,
+            x.avg_percent ?? '', x.max_percent ?? '', x.min_percent ?? '']);
+        });
+        sheets.push({ name: 'รายกิจกรรม', rows: arows });
+
+        if (R.activities.filter(a => a.type === 'quiz').length >= 2) {
+          const preId = UI.$('#ppPre').value, postId = UI.$('#ppPost').value;
+          if (preId && postId && preId !== postId) {
+            const pp = RPT.prepost(rows, preId, postId);
+            const t = n => (n === null || n === undefined ? '' : Math.round(n * 100) / 100);
+            const prer = [['การเปรียบเทียบคะแนนก่อนเรียนและหลังเรียน'],
+              ['ก่อนเรียน', (acts.find(a => a.activity_id === preId) || {}).title, 'ใช้คะแนนครั้งแรก'],
+              ['หลังเรียน', (acts.find(a => a.activity_id === postId) || {}).title, 'ใช้คะแนนครั้งที่ดีที่สุด'], [],
+              ['ลำดับ', 'ชื่อ-สกุล', 'หน่วยงาน', 'ก่อนเรียน (คะแนน)', 'คะแนนเต็ม', 'ก่อนเรียน (%)', 'หลังเรียน (คะแนน)', 'คะแนนเต็ม', 'หลังเรียน (%)', 'ผลต่าง (%)']];
+            pp.pairs.forEach((x, i) => prer.push([i + 1, x.name, x.organization || '',
+              x.pre ? x.pre.score : '', x.pre ? x.pre.max : '', x.pre ? x.pre.percent : '',
+              x.post ? x.post.score : '', x.post ? x.post.max : '', x.post ? x.post.percent : '', x.gain ?? '']));
+            prer.push([], ['สรุป (เฉพาะผู้ที่ทำครบทั้ง 2 ครั้ง)'],
+              ['จำนวน (n)', pp.n], ['ค่าเฉลี่ยก่อนเรียน (%)', t(pp.pre_mean)], ['S.D. ก่อนเรียน', t(pp.pre_sd)],
+              ['ค่าเฉลี่ยหลังเรียน (%)', t(pp.post_mean)], ['S.D. หลังเรียน', t(pp.post_sd)], ['พัฒนาการเฉลี่ย (%)', t(pp.gain_mean)],
+              ['t (Dependent t-test)', pp.t === null ? '' : Math.round(pp.t * 1000) / 1000], ['df', pp.df ?? ''], ['p (สองทาง)', pp.p === null ? '' : Math.round(pp.p * 10000) / 10000],
+              ['ดัชนีประสิทธิผล (E.I.)', pp.ei === null ? '' : Math.round(pp.ei * 10000) / 10000],
+              ['คะแนนเพิ่มขึ้น / เท่าเดิม / ลดลง (คน)', `${pp.improved} / ${pp.same} / ${pp.declined}`]);
+            sheets.push({ name: 'ก่อน-หลังเรียน', rows: prer });
+          }
+        }
+        await RPT.exportXlsx(`รายงาน_${p.code}_${fileDate()}`, sheets);
+      } catch (err) { UI.error(err); }
+      UI.btnLoading(btn, false);
+    }
+
+    async function exportItems() {
+      if (!ITEM) return;
+      const btn = UI.$('#btnItemXlsx');
+      UI.btnLoading(btn, true, '...');
+      try {
+        const d = ITEM;
+        const rows = [['วิเคราะห์ข้อสอบ: ' + d.activity.title], ['โครงการ', R.project.title], ['ผู้ทำแบบทดสอบ', d.takers, d.pick === 'first' ? 'ใช้ผลครั้งแรก' : 'ใช้ผลครั้งที่ดีที่สุด'],
+          ['คะแนนเฉลี่ย (%)', d.mean ?? '', 'S.D.', d.sd ?? ''], [],
+          ['ข้อ', 'คำถาม', 'ประเภท', 'คะแนน', 'ตอบ', 'ตอบถูก', 'ค่าความยาก (p)', 'อำนาจจำแนก (r)', 'แปลผล', 'การเลือกตอบ']];
+        const TYPE = { single: 'ตัวเลือกเดียว', multiple: 'หลายคำตอบ', truefalse: 'ถูก/ผิด', short: 'เติมคำตอบสั้น', essay: 'อัตนัย' };
+        d.items.forEach(it => rows.push([it.no, it.question_text, TYPE[it.type] || it.type, it.score, it.answered, it.type === 'essay' ? '' : it.correct,
+          it.p ?? '', it.r ?? '', RPT.itemVerdict(it).label,
+          it.distribution ? it.distribution.map((n, j) => `${(it.answer || []).map(Number).includes(j) ? '✓' : ''}${optLabel(it, j)}: ${n}`).join(' | ')
+            : it.top_answers ? it.top_answers.map(t => `${t.text}: ${t.count}`).join(' | ') : it.type === 'essay' ? `เฉลี่ย ${it.avg_earned ?? ''}` : '']));
+        await RPT.exportXlsx(`วิเคราะห์ข้อสอบ_${d.activity.title}_${fileDate()}`, [{ name: 'วิเคราะห์ข้อสอบ', rows }]);
+      } catch (err) { UI.error(err); }
+      UI.btnLoading(btn, false);
+    }
+  </script>
+</body>
+</html>

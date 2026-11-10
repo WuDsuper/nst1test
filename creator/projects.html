@@ -124,6 +124,7 @@
           <td data-label="สถานะ"><div class="d-flex flex-column align-items-end align-items-md-start gap-1">${PUI.statusBadge(p.status)}${p.status === 'published' ? `<span class="small text-muted">${UI.esc(PUI.state(p).label)}</span>` : ''}</div></td>
           <td data-label="" class="text-end td-actions text-nowrap">
             <a href="activities.html?project_id=${p.project_id}" class="btn btn-sm btn-soft" title="กิจกรรม"><i class="bi bi-list-check"></i><span class="d-none d-xl-inline ms-1">กิจกรรม</span></a>
+            <a href="reports.html?project_id=${p.project_id}" class="btn btn-sm btn-soft" title="รายงานผล"><i class="bi bi-bar-chart-line"></i><span class="d-none d-xl-inline ms-1">รายงาน</span></a>
             <a href="participants.html?id=${p.project_id}" class="btn btn-sm btn-soft" title="ผู้เข้าร่วม"><i class="bi bi-people"></i><span class="d-none d-xl-inline ms-1">ผู้เข้าร่วม</span></a>
             <a href="project-edit.html?id=${p.project_id}" class="btn btn-sm btn-light" title="แก้ไข" aria-label="แก้ไข"><i class="bi bi-pencil"></i></a>
             <button class="btn btn-sm btn-soft-danger" data-del="${p.project_id}" title="ลบ" aria-label="ลบ"><i class="bi bi-trash"></i></button>
