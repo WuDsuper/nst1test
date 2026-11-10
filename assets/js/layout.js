@@ -5,7 +5,8 @@ const Layout = (() => {
       { section: 'ภาพรวม' },
       { key: 'dashboard', icon: 'grid-1x2', label: 'แดชบอร์ด', href: 'admin/dashboard.html' },
       { section: 'การฝึกอบรม' },
-      { key: 'projects', icon: 'folder2-open', label: 'โครงการทั้งหมด', soon: true },
+      { key: 'projects', icon: 'folder2-open', label: 'โครงการทั้งหมด', href: 'creator/projects.html' },
+      { key: 'participants', icon: 'person-check', label: 'ผู้เข้าร่วม', href: 'creator/participants.html' },
       { key: 'reports', icon: 'bar-chart-line', label: 'รายงานผล', soon: true },
       { section: 'จัดการระบบ' },
       { key: 'users', icon: 'people', label: 'ผู้ใช้งาน', href: 'admin/users.html' },
@@ -17,26 +18,27 @@ const Layout = (() => {
       { section: 'ภาพรวม' },
       { key: 'dashboard', icon: 'grid-1x2', label: 'แดชบอร์ด', href: 'creator/dashboard.html' },
       { section: 'หลักสูตรของฉัน' },
-      { key: 'projects', icon: 'folder2-open', label: 'โครงการของฉัน', soon: true },
-      { key: 'participants', icon: 'person-check', label: 'ผู้เข้าร่วม', soon: true },
+      { key: 'projects', icon: 'folder2-open', label: 'โครงการของฉัน', href: 'creator/projects.html' },
+      { key: 'participants', icon: 'person-check', label: 'ผู้เข้าร่วม', href: 'creator/participants.html' },
       { key: 'grading', icon: 'clipboard-check', label: 'ตรวจงาน', soon: true },
       { key: 'reports', icon: 'bar-chart-line', label: 'รายงานผล', soon: true }
     ],
     user: [
       { section: 'เมนูหลัก' },
       { key: 'dashboard', icon: 'grid-1x2', label: 'แดชบอร์ด', href: 'user/dashboard.html' },
-      { key: 'explore', icon: 'search', label: 'ค้นหาโครงการ', soon: true },
+      { key: 'explore', icon: 'search', label: 'ค้นหาโครงการ', href: 'user/projects.html' },
       { key: 'results', icon: 'award', label: 'ผลการอบรม', soon: true }
     ]
   };
   const COMMON = [
     { section: 'บัญชีของฉัน' },
+    { key: 'explore', icon: 'compass', label: 'โครงการที่เปิดรับ', href: 'user/projects.html', roles: ['admin', 'creator'] },
     { key: 'profile', icon: 'person-circle', label: 'ข้อมูลส่วนตัว', href: 'user/profile.html' }
   ];
 
   function sidebar(user, active) {
     const r = UI.root();
-    const items = [...(MENUS[user.role] || MENUS.user), ...COMMON];
+    const items = [...(MENUS[user.role] || MENUS.user), ...COMMON].filter(it => !it.roles || it.roles.includes(user.role));
     const nav = items.map(it => {
       if (it.section) return `<div class="side-section">${it.section}</div>`;
       if (it.soon) return `<span class="side-link disabled" title="กำลังพัฒนา"><i class="bi bi-${it.icon}"></i>${it.label}<span class="soon">เร็ว ๆ นี้</span></span>`;

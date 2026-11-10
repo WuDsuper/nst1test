@@ -5,7 +5,7 @@
  * บัญชีทดลอง: admin@demo.local / admin1234, creator@demo.local / creator1234, user@demo.local / user1234
  */
 const Mock = (() => {
-  const KEY = 'tms_mock_db_v1';
+  const KEY = 'tms_mock_db_v2';
   const now = () => new Date().toISOString();
   const addH = h => new Date(Date.now() + h * 3600e3).toISOString();
   const uid = () => (window.crypto && crypto.randomUUID) ? crypto.randomUUID()
@@ -36,12 +36,39 @@ const Mock = (() => {
         'โรงเรียนตัวอย่าง ' + (i + 1), i === 6 ? 'pending' : 'active', 5 + i * 40));
     });
     const y = fyNow();
+    const fyCur = { fy_id: uid(), year: String(y), ...fyRange(y), is_active: 'TRUE' };
+    const fyPrev = { fy_id: uid(), year: String(y - 1), ...fyRange(y - 1), is_active: 'FALSE' };
+    const day = n => { const d = new Date(Date.now() + n * 864e5); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+    const creator = users[1].user_id;
+    const mkP = (o) => ({
+      project_id: uid(), code: '', description: '', objectives: '', cover_url: '', owner_id: creator,
+      start_date: '', end_date: '', reg_open: '', reg_close: '', capacity: '', enroll_mode: 'auto', pass_criteria: '80',
+      status: 'published', hours: '', format: 'online', location: '', drive_folder_id: '', created_at: now(), updated_at: now(), ...o
+    });
+    const projects = [
+      mkP({ fy_id: fyCur.fy_id, code: `P${y}-001`, title: 'พัฒนาครูสู่การจัดการเรียนรู้เชิงรุก (Active Learning)',
+        description: 'โครงการพัฒนาครูให้มีความรู้และทักษะการออกแบบการจัดการเรียนรู้เชิงรุก\nเรียนรู้ผ่านกิจกรรมออนไลน์ ทำแบบทดสอบก่อน-หลัง และส่งแผนการจัดการเรียนรู้',
+        objectives: '1. เพื่อให้ครูเข้าใจหลักการจัดการเรียนรู้เชิงรุก\n2. เพื่อให้ครูออกแบบแผนการจัดการเรียนรู้ได้\n3. เพื่อแลกเปลี่ยนเรียนรู้ผ่านชุมชนการเรียนรู้ทางวิชาชีพ',
+        start_date: day(10), end_date: day(40), reg_open: day(-5), reg_close: day(9), capacity: '50', hours: '12', format: 'online' }),
+      mkP({ fy_id: fyCur.fy_id, code: `P${y}-002`, title: 'การใช้ AI และเทคโนโลยีดิจิทัลเพื่อการศึกษา',
+        description: 'อบรมเชิงปฏิบัติการการใช้เครื่องมือ AI ช่วยสร้างสื่อและออกแบบการสอน', objectives: 'ครูสามารถใช้เครื่องมือดิจิทัลสร้างสื่อการสอนได้',
+        start_date: day(20), end_date: day(22), reg_open: day(-2), reg_close: day(15), capacity: '30', hours: '18',
+        format: 'hybrid', location: 'ห้องประชุมสำนักงานเขตพื้นที่การศึกษา', enroll_mode: 'approval' }),
+      mkP({ fy_id: fyCur.fy_id, code: `P${y}-003`, title: 'การวัดและประเมินผลตามสภาพจริง', description: 'อยู่ระหว่างจัดเตรียมเนื้อหา',
+        status: 'draft', hours: '6', start_date: day(60), end_date: day(61) }),
+      mkP({ fy_id: fyPrev.fy_id, code: `P${y - 1}-001`, title: 'การนิเทศภายในโรงเรียนแบบกัลยาณมิตร', description: 'โครงการปีงบประมาณที่ผ่านมา',
+        status: 'closed', hours: '9', start_date: day(-200), end_date: day(-190), reg_open: day(-230), reg_close: day(-201) })
+    ];
+    const en = (p, u, status, days) => ({ enroll_id: uid(), project_id: p.project_id, user_id: u.user_id, status,
+      enrolled_at: new Date(Date.now() - days * 864e5).toISOString(), completed_at: status === 'completed' ? now() : '' });
+    const enrollments = [
+      en(projects[0], users[2], 'approved', 3), en(projects[0], users[3], 'approved', 4), en(projects[0], users[4], 'approved', 2),
+      en(projects[0], users[5], 'approved', 1), en(projects[1], users[3], 'pending', 1), en(projects[1], users[6], 'pending', 1),
+      en(projects[1], users[7], 'approved', 2), en(projects[3], users[2], 'completed', 210), en(projects[3], users[4], 'completed', 210)
+    ];
     return {
-      users, sessions: [], projects: [], enrollments: [], logs: [],
-      fiscalYears: [
-        { fy_id: uid(), year: String(y), ...fyRange(y), is_active: 'TRUE' },
-        { fy_id: uid(), year: String(y - 1), ...fyRange(y - 1), is_active: 'FALSE' }
-      ],
+      users, sessions: [], projects, enrollments, logs: [],
+      fiscalYears: [fyCur, fyPrev],
       settings: { site_name: 'ระบบฝึกอบรมออนไลน์', org_name: 'หน่วยงานตัวอย่าง (โหมดทดลอง)', logo_url: '', theme_color: '#4F46E5', frontend_url: '' }
     };
   }
@@ -65,6 +92,27 @@ const Mock = (() => {
   const norm = e => String(e || '').trim().toLowerCase();
   const clean = (s, max = 200) => String(s ?? '').trim().slice(0, max);
   const log = (db, user_id, action, detail = '') => db.logs.push({ timestamp: now(), user_id, action, detail });
+
+  const ENROLL_ACTIVE = ['pending', 'approved', 'completed'];
+  const todayStr = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+  const fname = u => u ? `${u.prefix || ''}${u.first_name || ''} ${u.last_name || ''}`.trim() : '';
+  const canManage = (u, p) => !!u && (u.role === 'admin' || (u.role === 'creator' && p.owner_id === u.user_id));
+  function optUser(db, token) { try { return token ? requireUser(db, token) : null; } catch (e) { return null; } }
+  function view(db, p, me) {
+    const en = db.enrollments.filter(e => e.project_id === p.project_id);
+    const cnt = st => en.filter(e => st.includes(e.status)).length;
+    const mine = me ? en.find(e => e.user_id === me.user_id) : null;
+    const fy = db.fiscalYears.find(f => f.fy_id === p.fy_id);
+    const v = { ...p };
+    delete v.drive_folder_id;
+    Object.assign(v, {
+      fy_year: fy ? fy.year : '', owner_name: fname(db.users.find(u => u.user_id === p.owner_id)),
+      enrolled: cnt(ENROLL_ACTIVE), approved: cnt(['approved', 'completed']),
+      my_status: mine ? mine.status : '', my_enroll_id: mine ? mine.enroll_id : '', can_edit: canManage(me, p)
+    });
+    if (v.can_edit) { v.pending = cnt(['pending']); v.rejected = cnt(['rejected']); }
+    return v;
+  }
 
   function requireUser(db, token, roles) {
     const s = db.sessions.find(x => x.session_token === token);
@@ -227,6 +275,164 @@ const Mock = (() => {
       return pub(u);
     },
 
+    'project.list'(db, d, token) {
+      const scope = d.scope || 'public';
+      const me = scope === 'public' ? optUser(db, token) : requireUser(db, token, scope === 'all' ? ['admin'] : ['admin', 'creator']);
+      let list = db.projects;
+      if (d.fy_id) list = list.filter(p => p.fy_id === d.fy_id);
+      if (scope === 'public') list = list.filter(p => p.status === 'published');
+      else if (scope === 'mine') list = list.filter(p => p.owner_id === me.user_id);
+      return list.map(p => view(db, p, me)).sort((a, b) => ((b.start_date || b.created_at) > (a.start_date || a.created_at) ? 1 : -1));
+    },
+    'project.get'(db, d, token) {
+      const me = optUser(db, token);
+      const p = db.projects.find(x => x.project_id === d.project_id);
+      if (!p || (p.status === 'draft' && !canManage(me, p))) fail('ไม่พบโครงการ หรือโครงการยังไม่เผยแพร่');
+      return view(db, p, me);
+    },
+    'project.save'(db, d, token) {
+      const me = requireUser(db, token, ['admin', 'creator']);
+      const title = clean(d.title, 300);
+      if (!title) fail('กรุณากรอกชื่อโครงการ');
+      const fy = db.fiscalYears.find(f => f.fy_id === d.fy_id);
+      if (!fy) fail('กรุณาเลือกปีงบประมาณ');
+      if (d.start_date && d.end_date && d.start_date > d.end_date) fail('วันเริ่มอบรมต้องไม่หลังวันสิ้นสุด');
+      if (d.reg_open && d.reg_close && d.reg_open > d.reg_close) fail('วันเปิดรับสมัครต้องไม่หลังวันปิดรับสมัคร');
+      const num = (v, label, max) => {
+        if (v === '' || v == null) return '';
+        const n = Number(v);
+        if (!(n >= 0) || (max && n > max)) fail(label + 'ไม่ถูกต้อง');
+        return String(n);
+      };
+      let cur = null, owner = me.user_id;
+      if (d.project_id) {
+        cur = db.projects.find(p => p.project_id === d.project_id);
+        if (!cur) fail('ไม่พบโครงการที่ต้องการแก้ไข');
+        if (!canManage(me, cur)) fail('คุณไม่มีสิทธิ์แก้ไขโครงการนี้', 'FORBIDDEN');
+        owner = cur.owner_id;
+      }
+      if (me.role === 'admin' && d.owner_id) {
+        const o = db.users.find(u => u.user_id === d.owner_id);
+        if (!o || !['admin', 'creator'].includes(o.role)) fail('ผู้รับผิดชอบต้องเป็นผู้สร้างหลักสูตรหรือผู้ดูแลระบบ');
+        owner = d.owner_id;
+      }
+      let code = clean(d.code, 50);
+      if (!code) {
+        let n = db.projects.filter(p => p.fy_id === d.fy_id).length + 1;
+        do { code = 'P' + fy.year + '-' + String(n++).padStart(3, '0'); } while (db.projects.some(p => p.code === code));
+      } else if (db.projects.some(p => p.code === code && p.project_id !== d.project_id)) fail(`รหัสโครงการ "${code}" ซ้ำกับโครงการอื่น`);
+      const rec = {
+        fy_id: d.fy_id, code, title, description: clean(d.description, 5000), objectives: clean(d.objectives, 5000),
+        cover_url: clean(d.cover_url, 500), owner_id: owner, start_date: d.start_date || '', end_date: d.end_date || '',
+        reg_open: d.reg_open || '', reg_close: d.reg_close || '', capacity: num(d.capacity, 'จำนวนที่รับ'),
+        enroll_mode: ['auto', 'approval'].includes(d.enroll_mode) ? d.enroll_mode : 'auto',
+        pass_criteria: num(d.pass_criteria === '' || d.pass_criteria == null ? 80 : d.pass_criteria, 'เกณฑ์ผ่าน', 100),
+        status: ['draft', 'published', 'closed'].includes(d.status) ? d.status : 'draft',
+        hours: num(d.hours, 'จำนวนชั่วโมง'), format: ['online', 'onsite', 'hybrid'].includes(d.format) ? d.format : 'online',
+        location: clean(d.location, 300), updated_at: now()
+      };
+      let saved;
+      if (cur) saved = Object.assign(cur, rec);
+      else { saved = { project_id: uid(), created_at: now(), drive_folder_id: '', ...rec }; db.projects.push(saved); }
+      log(db, me.user_id, 'project_save', code + ' ' + title);
+      return view(db, saved, me);
+    },
+    'project.delete'(db, d, token) {
+      const me = requireUser(db, token, ['admin', 'creator']);
+      const p = db.projects.find(x => x.project_id === d.project_id);
+      if (!p) fail('ไม่พบโครงการ');
+      if (!canManage(me, p)) fail('คุณไม่มีสิทธิ์ลบโครงการนี้', 'FORBIDDEN');
+      if (db.enrollments.some(e => e.project_id === p.project_id)) fail('มีผู้ลงทะเบียนแล้ว ไม่สามารถลบได้ กรุณาเปลี่ยนสถานะเป็น "สิ้นสุดโครงการ" แทน');
+      db.projects = db.projects.filter(x => x.project_id !== p.project_id);
+      log(db, me.user_id, 'project_delete', p.code + ' ' + p.title);
+      return true;
+    },
+
+    'enroll.join'(db, d, token) {
+      const me = requireUser(db, token);
+      const p = db.projects.find(x => x.project_id === d.project_id);
+      if (!p || p.status !== 'published') fail('โครงการนี้ไม่เปิดรับสมัคร');
+      if (p.owner_id === me.user_id) fail('คุณเป็นผู้รับผิดชอบโครงการนี้ จึงลงทะเบียนเป็นผู้เข้าอบรมไม่ได้');
+      const t = todayStr();
+      if (p.reg_open && t < p.reg_open) fail('ยังไม่ถึงช่วงเวลารับสมัคร');
+      if (p.reg_close && t > p.reg_close) fail('ปิดรับสมัครแล้ว');
+      const en = db.enrollments.filter(e => e.project_id === p.project_id);
+      const mine = en.find(e => e.user_id === me.user_id);
+      if (mine) fail(mine.status === 'rejected' ? 'คุณไม่ผ่านการพิจารณาในโครงการนี้' : 'คุณลงทะเบียนโครงการนี้แล้ว');
+      const cap = parseInt(p.capacity, 10);
+      if (cap > 0 && en.filter(e => ENROLL_ACTIVE.includes(e.status)).length >= cap) fail('ขออภัย ที่นั่งเต็มแล้ว');
+      const rec = { enroll_id: uid(), project_id: p.project_id, user_id: me.user_id,
+        status: p.enroll_mode === 'approval' ? 'pending' : 'approved', enrolled_at: now(), completed_at: '' };
+      db.enrollments.push(rec);
+      log(db, me.user_id, 'enroll_join', p.code + ' ' + p.title);
+      return rec;
+    },
+    'enroll.cancel'(db, d, token) {
+      const me = requireUser(db, token);
+      const e = db.enrollments.find(x => x.enroll_id === d.enroll_id);
+      if (!e || e.user_id !== me.user_id) fail('ไม่พบการลงทะเบียน');
+      if (e.status === 'completed') fail('ผ่านการอบรมแล้ว ไม่สามารถยกเลิกได้');
+      db.enrollments = db.enrollments.filter(x => x.enroll_id !== e.enroll_id);
+      const p = db.projects.find(x => x.project_id === e.project_id);
+      log(db, me.user_id, 'enroll_cancel', p ? p.code + ' ' + p.title : '');
+      return true;
+    },
+    'enroll.my'(db, d, token) {
+      const me = requireUser(db, token);
+      return db.enrollments.filter(e => e.user_id === me.user_id)
+        .map(e => ({ e, p: db.projects.find(p => p.project_id === e.project_id) })).filter(x => x.p)
+        .map(({ e, p }) => ({ ...e, project: view(db, p, me) }))
+        .sort((a, b) => (a.enrolled_at < b.enrolled_at ? 1 : -1));
+    },
+    'enroll.listByProject'(db, d, token) {
+      const me = requireUser(db, token, ['admin', 'creator']);
+      const p = db.projects.find(x => x.project_id === d.project_id);
+      if (!p) fail('ไม่พบโครงการ');
+      if (!canManage(me, p)) fail('คุณไม่มีสิทธิ์ดูผู้เข้าร่วมโครงการนี้', 'FORBIDDEN');
+      const items = db.enrollments.filter(e => e.project_id === p.project_id).map(e => {
+        const u = db.users.find(x => x.user_id === e.user_id);
+        return { ...e, user: u ? pub(u) : { first_name: '(ผู้ใช้ถูกลบ)', last_name: '', email: '' } };
+      }).sort((a, b) => (a.enrolled_at < b.enrolled_at ? -1 : 1));
+      return { project: view(db, p, me), items };
+    },
+    'enroll.setStatus'(db, d, token) {
+      const me = requireUser(db, token, ['admin', 'creator']);
+      if (!['pending', 'approved', 'rejected', 'completed'].includes(d.status)) fail('สถานะไม่ถูกต้อง');
+      const ids = d.enroll_ids || [];
+      if (!ids.length) fail('กรุณาเลือกรายชื่อ');
+      let updated = 0;
+      db.enrollments.forEach(e => {
+        if (!ids.includes(e.enroll_id) || e.status === d.status) return;
+        const p = db.projects.find(x => x.project_id === e.project_id);
+        if (!p || !canManage(me, p)) return;
+        e.status = d.status;
+        e.completed_at = d.status === 'completed' ? now() : '';
+        updated++;
+      });
+      log(db, me.user_id, 'enroll_status', updated + ' รายการ → ' + d.status);
+      return { updated, mailed: 0, mail_failed: 0, demo: true };
+    },
+    'enroll.remove'(db, d, token) {
+      const me = requireUser(db, token, ['admin', 'creator']);
+      const ids = d.enroll_ids || [];
+      const before = db.enrollments.length;
+      db.enrollments = db.enrollments.filter(e => {
+        const p = db.projects.find(x => x.project_id === e.project_id);
+        return !(ids.includes(e.enroll_id) && p && canManage(me, p));
+      });
+      log(db, me.user_id, 'enroll_remove', (before - db.enrollments.length) + ' รายการ');
+      return { removed: before - db.enrollments.length };
+    },
+    'dash.creator'(db, d, token) {
+      const me = requireUser(db, token, ['admin', 'creator']);
+      let fyId = d.fy_id;
+      if (!fyId) { const a = db.fiscalYears.find(f => f.is_active === 'TRUE'); fyId = a ? a.fy_id : ''; }
+      const list = db.projects.filter(p => p.owner_id === me.user_id && (!fyId || p.fy_id === fyId)).map(p => view(db, p, me));
+      const sum = k => list.reduce((s, p) => s + (p[k] || 0), 0);
+      return { fy_id: fyId, projects: list,
+        totals: { projects: list.length, published: list.filter(p => p.status === 'published').length, participants: sum('approved'), pending: sum('pending') } };
+    },
+
     'settings.get'(db) { const o = {}; SETTING_KEYS.forEach(k => { o[k] = db.settings[k] || ''; }); return o; },
     'settings.save'(db, d, token) {
       const a = requireUser(db, token, ['admin']);
@@ -262,7 +468,9 @@ const Mock = (() => {
         const o = monthly.find(x => x.key === key);
         if (o) o.count++;
       });
+      const fyP = active ? db.projects.filter(p => p.fy_id === active.fy_id) : db.projects;
       return {
+        projects_list: fyP.map(p => view(db, p, null)).sort((a, b) => b.enrolled - a.enrolled).slice(0, 8),
         users: {
           total: U.length, active: c(u => u.status === 'active'), pending: c(u => u.status === 'pending'),
           suspended: c(u => u.status === 'suspended'), admin: c(u => u.role === 'admin'),
@@ -270,7 +478,7 @@ const Mock = (() => {
         },
         fiscal_years: db.fiscalYears.length,
         active_fy: active ? active.year : null,
-        projects: db.projects.length,
+        projects: fyP.length,
         enrollments: db.enrollments.length,
         monthly,
         recent: U.slice().sort((a, b) => (a.created_at < b.created_at ? 1 : -1)).slice(0, 6).map(pub),
