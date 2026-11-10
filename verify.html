@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ยืนยันอีเมล</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="assets/css/style.css" rel="stylesheet">
+  <script src="assets/js/theme.js"></script>
+</head>
+<body data-root="">
+  <main class="auth-form-side" style="min-height:100vh">
+    <div class="auth-card fade-up">
+      <div class="text-center">
+        <a href="index.html" class="auth-logo">
+          <span class="brand-logo text-white" data-site-logo><i class="bi bi-mortarboard-fill"></i></span>
+          <span class="name" data-site-name>ระบบฝึกอบรมออนไลน์</span>
+        </a>
+      </div>
+      <div class="card text-center">
+        <div class="card-body p-4 p-md-5">
+          <div id="stLoading">
+            <div class="status-icon soft-primary"><span class="spinner-border"></span></div>
+            <h2 class="h4 fw-bold">กำลังยืนยันอีเมล...</h2>
+            <p class="text-muted mb-0">กรุณารอสักครู่</p>
+          </div>
+
+          <div id="stSuccess" class="d-none">
+            <div class="status-icon soft-success"><i class="bi bi-patch-check-fill"></i></div>
+            <h2 class="h4 fw-bold">ยืนยันอีเมลสำเร็จ!</h2>
+            <p class="text-muted">บัญชี <b id="okEmail"></b> พร้อมใช้งานแล้ว</p>
+            <a href="login.html" class="btn btn-primary btn-lg w-100 mt-2"><i class="bi bi-box-arrow-in-right me-2"></i>เข้าสู่ระบบ</a>
+          </div>
+
+          <div id="stError" class="d-none">
+            <div class="status-icon soft-danger"><i class="bi bi-x-octagon"></i></div>
+            <h2 class="h4 fw-bold">ยืนยันอีเมลไม่สำเร็จ</h2>
+            <p class="text-muted" id="errMsg"></p>
+            <form id="resendForm" class="text-start mt-4" novalidate>
+              <label class="form-label" for="email">ขอรับลิงก์ยืนยันใหม่</label>
+              <div class="input-group mb-3">
+                <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                <input type="email" class="form-control" id="email" name="email" placeholder="อีเมลที่ใช้สมัคร" required>
+              </div>
+              <button class="btn btn-primary w-100" type="submit" id="resendBtn"><i class="bi bi-send me-2"></i>ส่งลิงก์ยืนยันใหม่</button>
+            </form>
+            <div id="demoLink"></div>
+            <a href="login.html" class="d-inline-block mt-3 small text-decoration-none">กลับไปหน้าเข้าสู่ระบบ</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/mock.js"></script>
+  <script src="assets/js/utils.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script>
+    UI.loadSettings();
+    const show = id => ['stLoading', 'stSuccess', 'stError'].forEach(x => UI.$('#' + x).classList.toggle('d-none', x !== id));
+
+    (async () => {
+      const token = UI.qs('token');
+      if (!token) { UI.$('#errMsg').textContent = 'ไม่พบรหัสยืนยันในลิงก์'; return show('stError'); }
+      try {
+        const res = await API.call('verifyEmail', { token });
+        UI.$('#okEmail').textContent = res.email;
+        show('stSuccess');
+      } catch (err) {
+        UI.$('#errMsg').textContent = err.message;
+        show('stError');
+      }
+    })();
+
+    UI.$('#resendForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const f = e.currentTarget;
+      if (!f.checkValidity()) { f.classList.add('was-validated'); return; }
+      const btn = UI.$('#resendBtn');
+      UI.btnLoading(btn, true, 'กำลังส่ง...');
+      try {
+        const res = await API.call('resendVerify', { email: f.email.value });
+        UI.$('#demoLink').innerHTML = res.demo_link
+          ? `<div class="demo-box text-start mt-3"><b>โหมดทดลอง:</b> <a href="${res.demo_link}">คลิกเพื่อยืนยันอีเมล</a></div>` : '';
+        UI.success('ส่งลิงก์ยืนยันใหม่แล้ว', 'กรุณาตรวจสอบกล่องอีเมลของคุณ');
+      } catch (err) { UI.error(err); }
+      UI.btnLoading(btn, false);
+    });
+  </script>
+</body>
+</html>
