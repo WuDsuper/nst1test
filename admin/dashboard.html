@@ -60,6 +60,19 @@
           </div>
         </div>
 
+        <div class="card mb-4">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-folder2-open me-2 text-primary"></i>โครงการในปีงบประมาณปัจจุบัน</span>
+            <a href="../creator/projects.html" class="small text-decoration-none">ดูทั้งหมด <i class="bi bi-arrow-right"></i></a>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover table-cards">
+              <thead><tr><th>โครงการ</th><th>ผู้รับผิดชอบ</th><th>ผู้ลงทะเบียน</th><th>สถานะ</th></tr></thead>
+              <tbody id="pjBody"><tr><td colspan="4"><div class="skeleton" style="height:80px"></div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
         <div class="row g-3">
           <div class="col-lg-8">
             <div class="card h-100">
@@ -99,6 +112,7 @@
   <script src="../assets/js/api.js"></script>
   <script src="../assets/js/auth.js"></script>
   <script src="../assets/js/layout.js"></script>
+  <script src="../assets/js/projects.js"></script>
   <script>
     const me = Auth.require(['admin']);
     let charts = [];
@@ -126,6 +140,7 @@
         UI.$('#sSuspended').textContent = d.users.suspended + ' บัญชี';
         UI.$('#sFy').textContent = d.fiscal_years + ' ปี';
         renderRecent(d.recent);
+        renderProjects(d.projects_list || []);
         drawCharts(d);
       } catch (err) { UI.error(err); }
     }
@@ -141,6 +156,19 @@
           <div class="text-end d-none d-sm-block">${UI.statusBadge(u.status)}<div class="small text-muted mt-1">${UI.timeAgo(u.created_at)}</div></div>
         </div>`).join('')
         : '<div class="empty-state"><div class="icon soft-primary"><i class="bi bi-people"></i></div><h5>ยังไม่มีผู้สมัคร</h5></div>';
+    }
+
+    function renderProjects(list) {
+      UI.$('#pjBody').innerHTML = list.length ? list.map(p => {
+        const cap = parseInt(p.capacity, 10);
+        return `<tr>
+          <td data-label="" class="td-main"><div class="d-flex align-items-center gap-3 min-w-0"><div class="pj-thumb">${PUI.cover(p)}</div>
+            <div class="min-w-0"><a href="../project.html?id=${p.project_id}" class="fw-semibold text-body text-decoration-none">${UI.esc(p.title)}</a><div class="small text-muted">${UI.esc(p.code)}</div></div></div></td>
+          <td data-label="ผู้รับผิดชอบ" class="small">${UI.esc(p.owner_name || '-')}</td>
+          <td data-label="ผู้ลงทะเบียน"><b>${p.enrolled}</b><span class="small text-muted">${cap ? ' / ' + cap : ''} คน</span></td>
+          <td data-label="สถานะ">${p.status === 'published' ? PUI.stateBadge(p) : PUI.statusBadge(p.status)}</td>
+        </tr>`;
+      }).join('') : `<tr><td colspan="4" data-label=""><div class="text-center text-muted py-4">ยังไม่มีโครงการในปีงบประมาณนี้</div></td></tr>`;
     }
 
     function drawCharts(d) {
