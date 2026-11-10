@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>แดชบอร์ดผู้ดูแลระบบ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="../assets/css/style.css" rel="stylesheet">
+  <script src="../assets/js/theme.js"></script>
+</head>
+<body data-root="../">
+  <div class="app">
+    <aside class="sidebar offcanvas-lg offcanvas-start" tabindex="-1" id="sidebar"></aside>
+    <div class="app-main">
+      <header class="topbar" id="topbar"></header>
+      <main class="app-content">
+
+        <div class="hero-card mb-4 fade-up">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+              <div class="opacity-75 small mb-1" id="today"></div>
+              <h2 class="h3 fw-bold mb-1">สวัสดี, <span id="hello"></span> 👋</h2>
+              <p class="mb-0 opacity-75">ภาพรวมระบบฝึกอบรม ปีงบประมาณ <b id="activeFy">-</b></p>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+              <a href="users.html" class="btn btn-white"><i class="bi bi-people me-1"></i>จัดการผู้ใช้</a>
+              <a href="fiscal-years.html" class="btn btn-ghost-light"><i class="bi bi-calendar3 me-1"></i>ปีงบประมาณ</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-6 col-xl-3"><div class="card stat-card"><div class="stat-icon soft-primary"><i class="bi bi-people-fill"></i></div><div><div class="stat-value" id="sTotal">–</div><div class="stat-label">ผู้ใช้ทั้งหมด</div></div></div></div>
+          <div class="col-6 col-xl-3"><div class="card stat-card"><div class="stat-icon soft-warning"><i class="bi bi-hourglass-split"></i></div><div><div class="stat-value" id="sPending">–</div><div class="stat-label">รอยืนยันอีเมล</div></div></div></div>
+          <div class="col-6 col-xl-3"><div class="card stat-card"><div class="stat-icon soft-purple"><i class="bi bi-easel2-fill"></i></div><div><div class="stat-value" id="sCreator">–</div><div class="stat-label">ผู้สร้างหลักสูตร</div></div></div></div>
+          <div class="col-6 col-xl-3"><div class="card stat-card"><div class="stat-icon soft-success"><i class="bi bi-folder2-open"></i></div><div><div class="stat-value" id="sProjects">–</div><div class="stat-label">โครงการปีนี้</div></div></div></div>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-lg-8">
+            <div class="card h-100">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-graph-up me-2 text-primary"></i>ผู้สมัครใหม่ย้อนหลัง 12 เดือน</span>
+              </div>
+              <div class="card-body"><div style="height:280px"><canvas id="chartMonthly"></canvas></div></div>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div class="card h-100">
+              <div class="card-header"><i class="bi bi-pie-chart me-2 text-primary"></i>ผู้ใช้ตามบทบาท</div>
+              <div class="card-body d-flex flex-column">
+                <div style="height:200px" class="mb-3"><canvas id="chartRoles"></canvas></div>
+                <div class="vstack gap-2 small mt-auto" id="roleLegend"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-lg-8">
+            <div class="card h-100">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-person-plus me-2 text-primary"></i>สมัครสมาชิกล่าสุด</span>
+                <a href="users.html" class="small text-decoration-none">ดูทั้งหมด <i class="bi bi-arrow-right"></i></a>
+              </div>
+              <div class="list-group list-group-flush" id="recent">
+                <div class="p-4"><div class="skeleton" style="height:120px"></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div class="card h-100">
+              <div class="card-header"><i class="bi bi-activity me-2 text-primary"></i>สถานะระบบ</div>
+              <div class="card-body vstack gap-3">
+                <div class="d-flex align-items-center gap-3"><span class="stat-icon soft-info" style="width:44px;height:44px;font-size:1.1rem"><i class="bi bi-envelope"></i></span><div><div class="fw-semibold" id="sQuota">–</div><div class="small text-muted">โควตาอีเมลคงเหลือวันนี้</div></div></div>
+                <div class="d-flex align-items-center gap-3"><span class="stat-icon soft-success" style="width:44px;height:44px;font-size:1.1rem"><i class="bi bi-person-check"></i></span><div><div class="fw-semibold" id="sActive">–</div><div class="small text-muted">บัญชีที่ใช้งานได้</div></div></div>
+                <div class="d-flex align-items-center gap-3"><span class="stat-icon soft-danger" style="width:44px;height:44px;font-size:1.1rem"><i class="bi bi-slash-circle"></i></span><div><div class="fw-semibold" id="sSuspended">–</div><div class="small text-muted">บัญชีที่ถูกระงับ</div></div></div>
+                <div class="d-flex align-items-center gap-3"><span class="stat-icon soft-primary" style="width:44px;height:44px;font-size:1.1rem"><i class="bi bi-calendar3"></i></span><div><div class="fw-semibold" id="sFy">–</div><div class="small text-muted">ปีงบประมาณในระบบ</div></div></div>
+                <a href="settings.html" class="btn btn-soft mt-auto"><i class="bi bi-sliders me-1"></i>ตั้งค่าระบบ</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/mock.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/layout.js"></script>
+  <script>
+    const me = Auth.require(['admin']);
+    let charts = [];
+    let lastData = null;
+
+    if (me) {
+      Layout.init(me, { active: 'dashboard', title: 'แดชบอร์ดผู้ดูแลระบบ' });
+      UI.$('#hello').textContent = me.first_name;
+      UI.$('#today').textContent = UI.thaiDateLong(new Date().toISOString());
+      load();
+      document.addEventListener('tms:theme', () => lastData && drawCharts(lastData));
+    }
+
+    async function load() {
+      try {
+        const d = await API.call('dash.admin');
+        lastData = d;
+        UI.$('#activeFy').textContent = d.active_fy || '-';
+        UI.$('#sTotal').textContent = d.users.total;
+        UI.$('#sPending').textContent = d.users.pending;
+        UI.$('#sCreator').textContent = d.users.creator;
+        UI.$('#sProjects').textContent = d.projects;
+        UI.$('#sQuota').textContent = d.mail_quota == null ? '-' : d.mail_quota + ' ฉบับ';
+        UI.$('#sActive').textContent = d.users.active + ' บัญชี';
+        UI.$('#sSuspended').textContent = d.users.suspended + ' บัญชี';
+        UI.$('#sFy').textContent = d.fiscal_years + ' ปี';
+        renderRecent(d.recent);
+        drawCharts(d);
+      } catch (err) { UI.error(err); }
+    }
+
+    function renderRecent(list) {
+      UI.$('#recent').innerHTML = list.length ? list.map(u => `
+        <div class="list-group-item bg-transparent d-flex align-items-center gap-3 py-3">
+          <span class="avatar">${UI.esc(UI.initials(u))}</span>
+          <div class="min-w-0 flex-grow-1">
+            <div class="fw-semibold text-truncate">${UI.esc(UI.fullName(u))}</div>
+            <div class="small text-muted text-truncate">${UI.esc(u.organization || u.email)}</div>
+          </div>
+          <div class="text-end d-none d-sm-block">${UI.statusBadge(u.status)}<div class="small text-muted mt-1">${UI.timeAgo(u.created_at)}</div></div>
+        </div>`).join('')
+        : '<div class="empty-state"><div class="icon soft-primary"><i class="bi bi-people"></i></div><h5>ยังไม่มีผู้สมัคร</h5></div>';
+    }
+
+    function drawCharts(d) {
+      charts.forEach(c => c.destroy());
+      const css = getComputedStyle(document.documentElement);
+      const primary = css.getPropertyValue('--tms-primary').trim() || '#4F46E5';
+      Chart.defaults.font.family = "'Sarabun', sans-serif";
+      Chart.defaults.color = css.getPropertyValue('--tms-muted').trim();
+      const grid = css.getPropertyValue('--tms-border').trim();
+
+      const ctx = UI.$('#chartMonthly').getContext('2d');
+      const g = ctx.createLinearGradient(0, 0, 0, 280);
+      g.addColorStop(0, primary + '55');
+      g.addColorStop(1, primary + '00');
+      charts.push(new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: d.monthly.map(m => m.label),
+          datasets: [{ label: 'ผู้สมัครใหม่', data: d.monthly.map(m => m.count), borderColor: primary, backgroundColor: g,
+            fill: true, tension: .35, cubicInterpolationMode: 'monotone', borderWidth: 3, pointRadius: 4, pointBackgroundColor: '#fff', pointBorderColor: primary, pointBorderWidth: 2 }]
+        },
+        options: {
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${c.parsed.y} คน` } } },
+          scales: { y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: grid } }, x: { grid: { display: false } } }
+        }
+      }));
+
+      const roles = [
+        { label: 'ผู้ดูแลระบบ', value: d.users.admin, color: '#EF4444' },
+        { label: 'ผู้สร้างหลักสูตร', value: d.users.creator, color: '#7C3AED' },
+        { label: 'ผู้ใช้ทั่วไป', value: d.users.user, color: primary }
+      ];
+      charts.push(new Chart(UI.$('#chartRoles'), {
+        type: 'doughnut',
+        data: { labels: roles.map(r => r.label), datasets: [{ data: roles.map(r => r.value), backgroundColor: roles.map(r => r.color), borderWidth: 0, hoverOffset: 6 }] },
+        options: { maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false } } }
+      }));
+      UI.$('#roleLegend').innerHTML = roles.map(r => `
+        <div class="d-flex align-items-center gap-2">
+          <span style="width:10px;height:10px;border-radius:3px;background:${r.color}"></span>
+          <span class="flex-grow-1">${r.label}</span><b>${r.value}</b>
+        </div>`).join('');
+    }
+  </script>
+</body>
+</html>

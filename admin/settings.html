@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ตั้งค่าระบบ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="../assets/css/style.css" rel="stylesheet">
+  <script src="../assets/js/theme.js"></script>
+</head>
+<body data-root="../">
+  <div class="app">
+    <aside class="sidebar offcanvas-lg offcanvas-start" tabindex="-1" id="sidebar"></aside>
+    <div class="app-main">
+      <header class="topbar" id="topbar"></header>
+      <main class="app-content">
+        <div class="page-head">
+          <div>
+            <h1>ตั้งค่าระบบ</h1>
+            <p>ชื่อระบบ หน่วยงาน โลโก้ สีหลัก และการส่งอีเมลยืนยัน</p>
+          </div>
+        </div>
+
+        <form id="setForm" novalidate>
+          <div class="row g-3">
+            <div class="col-lg-7">
+              <div class="card mb-3">
+                <div class="card-header"><i class="bi bi-building me-2 text-primary"></i>ข้อมูลระบบ</div>
+                <div class="card-body">
+                  <div class="mb-3">
+                    <label class="form-label" for="site_name">ชื่อระบบ</label>
+                    <input class="form-control" id="site_name" name="site_name" maxlength="100" required>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label" for="org_name">ชื่อหน่วยงาน</label>
+                    <input class="form-control" id="org_name" name="org_name" maxlength="200">
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label" for="logo_url">URL โลโก้</label>
+                    <input type="url" class="form-control" id="logo_url" name="logo_url" placeholder="https://...">
+                    <div class="form-text">ใช้ลิงก์รูปภาพสาธารณะ (แนะนำภาพสี่เหลี่ยมจัตุรัส)</div>
+                  </div>
+                  <div>
+                    <label class="form-label" for="theme_color">สีหลักของระบบ</label>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                      <input type="color" class="form-control form-control-color" id="theme_color" name="theme_color" value="#4F46E5">
+                      <div class="d-flex gap-1" id="swatches"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card-header"><i class="bi bi-envelope-at me-2 text-primary"></i>อีเมลยืนยันตัวตน</div>
+                <div class="card-body">
+                  <label class="form-label" for="frontend_url">URL หน้าเว็บ (GitHub Pages)</label>
+                  <div class="input-group">
+                    <input type="url" class="form-control" id="frontend_url" name="frontend_url" placeholder="https://username.github.io/training">
+                    <button class="btn btn-soft" type="button" id="useCurrent">ใช้ URL ปัจจุบัน</button>
+                  </div>
+                  <div class="form-text mb-3">ใช้สร้างลิงก์ในอีเมลยืนยันและรีเซ็ตรหัสผ่าน <b>ต้องตั้งค่านี้ก่อน</b> ผู้ใช้จึงจะสมัครสมาชิกได้</div>
+                  <div class="d-flex flex-wrap align-items-center gap-2">
+                    <button class="btn btn-outline-primary" type="button" id="testMail"><i class="bi bi-send me-1"></i>ส่งอีเมลทดสอบถึงตัวเอง</button>
+                    <span class="small text-muted" id="mailResult"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-lg-5">
+              <div class="card position-sticky" style="top:90px">
+                <div class="card-header"><i class="bi bi-eye me-2 text-primary"></i>ตัวอย่าง</div>
+                <div class="card-body">
+                  <div class="rounded-4 p-3 mb-3 text-white" id="pvSide" style="background:var(--tms-sidebar)">
+                    <div class="d-flex align-items-center gap-2">
+                      <span class="brand-logo" id="pvLogo"><i class="bi bi-mortarboard-fill"></i></span>
+                      <div class="min-w-0"><div class="brand-name text-truncate" id="pvName"></div><div class="brand-sub text-truncate" id="pvOrg"></div></div>
+                    </div>
+                  </div>
+                  <div class="hero-card py-3 px-3 mb-3" id="pvHero"><div class="fw-semibold">แถบต้อนรับ</div><div class="small opacity-75">ตัวอย่างสีหลักแบบไล่เฉด</div></div>
+                  <div class="d-flex gap-2">
+                    <span class="btn btn-primary" id="pvBtn">ปุ่มหลัก</span>
+                    <span class="btn btn-soft">ปุ่มรอง</span>
+                  </div>
+                </div>
+                <div class="card-footer bg-transparent border-top p-3">
+                  <button class="btn btn-primary w-100" type="submit" id="saveBtn"><i class="bi bi-check2-circle me-1"></i>บันทึกการตั้งค่า</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/mock.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/layout.js"></script>
+  <script>
+    const me = Auth.require(['admin']);
+    const form = UI.$('#setForm');
+    const SWATCHES = ['#4F46E5', '#2563EB', '#0891B2', '#059669', '#D97706', '#DC2626', '#DB2777', '#7C3AED'];
+
+    if (me) {
+      Layout.init(me, { active: 'settings', title: 'ตั้งค่าระบบ' });
+      load();
+    }
+
+    UI.$('#swatches').innerHTML = SWATCHES.map(c =>
+      `<button type="button" class="border-0 rounded-circle" data-color="${c}" style="width:30px;height:30px;background:${c}" aria-label="เลือกสี ${c}"></button>`).join('');
+    UI.$('#swatches').addEventListener('click', e => {
+      const b = e.target.closest('[data-color]');
+      if (b) { form.theme_color.value = b.dataset.color; preview(); }
+    });
+
+    async function load() {
+      try {
+        const s = await UI.loadSettings(true);
+        UI.fillForm(form, s);
+        if (!s.theme_color) form.theme_color.value = '#4F46E5';
+        preview();
+      } catch (err) { UI.error(err); }
+    }
+
+    function preview() {
+      const d = UI.formData(form);
+      UI.$('#pvName').textContent = d.site_name || APP_CONFIG.APP_NAME;
+      UI.$('#pvOrg').textContent = d.org_name || '';
+      UI.$('#pvLogo').innerHTML = d.logo_url ? `<img src="${UI.esc(d.logo_url)}" alt="">` : '<i class="bi bi-mortarboard-fill"></i>';
+      const grad = `linear-gradient(135deg, ${d.theme_color} 0%, #7C3AED 100%)`;
+      UI.$('#pvHero').style.background = grad;
+      UI.$('#pvBtn').style.backgroundImage = grad;
+    }
+    form.addEventListener('input', preview);
+
+    UI.$('#useCurrent').addEventListener('click', () => {
+      form.frontend_url.value = location.href.replace(/admin\/settings\.html.*$/, '').replace(/\/+$/, '');
+    });
+
+    UI.$('#testMail').addEventListener('click', async e => {
+      const b = e.currentTarget;
+      UI.btnLoading(b, true, 'กำลังส่ง...');
+      try {
+        const r = await API.call('settings.testMail');
+        UI.$('#mailResult').innerHTML = r.demo
+          ? '<span class="text-warning">โหมดทดลอง: ไม่มีการส่งอีเมลจริง</span>'
+          : `<span class="text-success"><i class="bi bi-check-circle me-1"></i>ส่งไปที่ ${UI.esc(r.to)} แล้ว (โควตาเหลือ ${r.quota} ฉบับ)</span>`;
+      } catch (err) { UI.error(err); }
+      UI.btnLoading(b, false);
+    });
+
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      if (!form.checkValidity()) { form.classList.add('was-validated'); return; }
+      const btn = UI.$('#saveBtn');
+      UI.btnLoading(btn, true, 'กำลังบันทึก...');
+      try {
+        const s = await API.call('settings.save', UI.formData(form));
+        try { localStorage.setItem('tms_settings', JSON.stringify({ t: Date.now(), v: s })); } catch (e) { }
+        UI.applySettings(s);
+        UI.toast('บันทึกการตั้งค่าแล้ว');
+      } catch (err) { UI.error(err); }
+      UI.btnLoading(btn, false);
+    });
+  </script>
+</body>
+</html>

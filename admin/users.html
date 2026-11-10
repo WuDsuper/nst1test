@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>จัดการผู้ใช้งาน</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="../assets/css/style.css" rel="stylesheet">
+  <script src="../assets/js/theme.js"></script>
+</head>
+<body data-root="../">
+  <div class="app">
+    <aside class="sidebar offcanvas-lg offcanvas-start" tabindex="-1" id="sidebar"></aside>
+    <div class="app-main">
+      <header class="topbar" id="topbar"></header>
+      <main class="app-content">
+        <div class="page-head">
+          <div>
+            <h1>ผู้ใช้งาน</h1>
+            <p>กำหนดบทบาท ระงับ หรือเปิดใช้งานบัญชีผู้ใช้</p>
+          </div>
+          <button class="btn btn-soft" id="reloadBtn"><i class="bi bi-arrow-clockwise me-1"></i>รีเฟรช</button>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 mb-3" id="chips"></div>
+
+        <div class="card mb-3">
+          <div class="card-body">
+            <div class="row g-2">
+              <div class="col-md-6">
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-search"></i></span>
+                  <input type="search" class="form-control" id="q" placeholder="ค้นหาชื่อ อีเมล หรือหน่วยงาน">
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <select class="form-select" id="fRole" aria-label="กรองตามบทบาท">
+                  <option value="">ทุกบทบาท</option>
+                  <option value="admin">ผู้ดูแลระบบ</option>
+                  <option value="creator">ผู้สร้างหลักสูตร</option>
+                  <option value="user">ผู้ใช้ทั่วไป</option>
+                </select>
+              </div>
+              <div class="col-6 col-md-3">
+                <select class="form-select" id="fStatus" aria-label="กรองตามสถานะ">
+                  <option value="">ทุกสถานะ</option>
+                  <option value="active">ใช้งาน</option>
+                  <option value="pending">รอยืนยันอีเมล</option>
+                  <option value="suspended">ระงับการใช้งาน</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="table-responsive">
+            <table class="table table-hover table-cards">
+              <thead>
+                <tr><th>ผู้ใช้</th><th>หน่วยงาน / ตำแหน่ง</th><th>บทบาท</th><th>สถานะ</th><th>สมัครเมื่อ</th><th class="text-end">จัดการ</th></tr>
+              </thead>
+              <tbody id="tbody">
+                <tr><td colspan="6"><div class="skeleton" style="height:160px"></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <p class="small text-muted mt-2" id="countText"></p>
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal จัดการผู้ใช้ -->
+  <div class="modal fade" id="userModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-person-gear me-2 text-primary"></i>จัดการผู้ใช้</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-flex align-items-center gap-3 mb-4">
+            <span class="avatar lg" id="mAvatar"></span>
+            <div class="min-w-0">
+              <div class="fw-semibold fs-5 text-truncate" id="mName"></div>
+              <div class="text-muted small text-break" id="mEmail"></div>
+              <div class="text-muted small" id="mOrg"></div>
+            </div>
+          </div>
+
+          <label class="form-label">บทบาท</label>
+          <div class="vstack gap-2 mb-4">
+            <label class="role-option"><input type="radio" class="d-none" name="mRole" value="user">
+              <div class="box"><span class="ri soft-primary"><i class="bi bi-person"></i></span><div><div class="fw-semibold">ผู้ใช้ทั่วไป</div><div class="small text-muted">ลงทะเบียนเข้าร่วมโครงการ ทำกิจกรรม</div></div></div></label>
+            <label class="role-option"><input type="radio" class="d-none" name="mRole" value="creator">
+              <div class="box"><span class="ri soft-purple"><i class="bi bi-easel2"></i></span><div><div class="fw-semibold">ผู้สร้างหลักสูตร</div><div class="small text-muted">สร้างโครงการ กิจกรรม แบบทดสอบ ตรวจงาน</div></div></div></label>
+            <label class="role-option"><input type="radio" class="d-none" name="mRole" value="admin">
+              <div class="box"><span class="ri soft-danger"><i class="bi bi-shield-lock"></i></span><div><div class="fw-semibold">ผู้ดูแลระบบ</div><div class="small text-muted">เข้าถึงและจัดการได้ทั้งระบบ</div></div></div></label>
+          </div>
+
+          <label class="form-label" for="mStatus">สถานะบัญชี</label>
+          <select class="form-select" id="mStatus"></select>
+          <div class="form-text" id="mStatusHint"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">ยกเลิก</button>
+          <button type="button" class="btn btn-primary" id="mSave"><i class="bi bi-check2 me-1"></i>บันทึก</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/mock.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/layout.js"></script>
+  <script>
+    const me = Auth.require(['admin']);
+    let users = [];
+    let editing = null;
+    const modal = new bootstrap.Modal('#userModal');
+
+    if (me) {
+      Layout.init(me, { active: 'users', title: 'จัดการผู้ใช้งาน' });
+      load();
+      ['#q', '#fRole', '#fStatus'].forEach(s => UI.$(s).addEventListener('input', render));
+      UI.$('#reloadBtn').addEventListener('click', load);
+    }
+
+    async function load() {
+      try {
+        users = await API.call('user.list');
+        render();
+      } catch (err) { UI.error(err); }
+    }
+
+    function renderChips() {
+      const c = f => users.filter(f).length;
+      const chips = [
+        ['ทั้งหมด', users.length, 'people', ''],
+        ['ผู้ดูแลระบบ', c(u => u.role === 'admin'), 'shield-lock', 'text-danger'],
+        ['ผู้สร้างหลักสูตร', c(u => u.role === 'creator'), 'easel2', 'text-purple'],
+        ['ผู้ใช้ทั่วไป', c(u => u.role === 'user'), 'person', 'text-primary'],
+        ['รอยืนยันอีเมล', c(u => u.status === 'pending'), 'hourglass-split', 'text-warning']
+      ];
+      UI.$('#chips').innerHTML = chips.map(([l, n, i, cls]) => `<span class="chip"><i class="bi bi-${i} ${cls}"></i>${l} <b>${n}</b></span>`).join('');
+    }
+
+    function render() {
+      renderChips();
+      const q = UI.$('#q').value.trim().toLowerCase();
+      const role = UI.$('#fRole').value;
+      const status = UI.$('#fStatus').value;
+      const list = users.filter(u =>
+        (!role || u.role === role) && (!status || u.status === status) &&
+        (!q || [u.first_name, u.last_name, u.email, u.organization, u.position].join(' ').toLowerCase().includes(q)));
+
+      UI.$('#countText').textContent = `แสดง ${list.length} จาก ${users.length} รายการ`;
+      if (!list.length) {
+        UI.$('#tbody').innerHTML = `<tr><td colspan="6" data-label=""><div class="empty-state"><div class="icon soft-primary"><i class="bi bi-search"></i></div><h5>ไม่พบผู้ใช้</h5><p class="mb-0">ลองเปลี่ยนคำค้นหาหรือตัวกรอง</p></div></td></tr>`;
+        return;
+      }
+      UI.$('#tbody').innerHTML = list.map(u => {
+        const self = u.user_id === me.user_id;
+        return `<tr>
+          <td data-label="" class="td-main">
+            <div class="d-flex align-items-center gap-3 min-w-0">
+              <span class="avatar">${UI.esc(UI.initials(u))}</span>
+              <div class="min-w-0">
+                <div class="fw-semibold">${UI.esc(UI.fullName(u))}${self ? ' <span class="badge-soft info ms-1">คุณ</span>' : ''}</div>
+                <div class="small text-muted text-break">${UI.esc(u.email)}</div>
+              </div>
+            </div>
+          </td>
+          <td data-label="หน่วยงาน"><div>${UI.esc(u.organization || '-')}</div><div class="small text-muted">${UI.esc(u.position || '')}</div></td>
+          <td data-label="บทบาท">${UI.roleBadge(u.role)}</td>
+          <td data-label="สถานะ">${UI.statusBadge(u.status)}</td>
+          <td data-label="สมัครเมื่อ" class="text-nowrap">${UI.thaiDate(u.created_at)}</td>
+          <td data-label="" class="text-end td-actions">
+            <button class="btn btn-sm btn-soft" data-edit="${u.user_id}" ${self ? 'disabled title="ไม่สามารถแก้ไขบัญชีของตนเองได้"' : ''}><i class="bi bi-pencil-square me-1"></i>จัดการ</button>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    UI.$('#tbody').addEventListener('click', e => {
+      const b = e.target.closest('[data-edit]');
+      if (b) openModal(b.dataset.edit);
+    });
+
+    function openModal(id) {
+      editing = users.find(u => u.user_id === id);
+      if (!editing) return;
+      UI.$('#mAvatar').textContent = UI.initials(editing);
+      UI.$('#mName').textContent = UI.fullName(editing);
+      UI.$('#mEmail').textContent = editing.email;
+      UI.$('#mOrg').textContent = [editing.position, editing.organization].filter(Boolean).join(' · ');
+      UI.$$('input[name="mRole"]').forEach(r => { r.checked = r.value === editing.role; });
+      const st = UI.$('#mStatus');
+      st.innerHTML = (editing.status === 'pending' ? '<option value="pending">รอยืนยันอีเมล (คงไว้)</option>' : '') +
+        `<option value="active">${editing.status === 'pending' ? 'เปิดใช้งานแทนผู้ใช้ (ไม่ต้องยืนยันอีเมล)' : 'ใช้งาน'}</option>
+         <option value="suspended">ระงับการใช้งาน</option>`;
+      st.value = editing.status;
+      UI.$('#mStatusHint').textContent = editing.status === 'pending'
+        ? 'ผู้ใช้ยังไม่ได้ยืนยันอีเมล สามารถเปิดใช้งานให้ได้หากยืนยันตัวตนด้วยวิธีอื่นแล้ว' : 'บัญชีที่ถูกระงับจะเข้าสู่ระบบไม่ได้ทันที';
+      modal.show();
+    }
+
+    UI.$('#mSave').addEventListener('click', async e => {
+      const btn = e.currentTarget;
+      const role = (UI.$('input[name="mRole"]:checked') || {}).value;
+      const status = UI.$('#mStatus').value;
+      const tasks = [];
+      if (role && role !== editing.role) tasks.push(['user.setRole', { user_id: editing.user_id, role }]);
+      if (status !== editing.status && status !== 'pending') tasks.push(['user.setStatus', { user_id: editing.user_id, status }]);
+      if (!tasks.length) return modal.hide();
+      if (role === 'admin' && editing.role !== 'admin' &&
+          !(await UI.confirm('ยืนยันการแต่งตั้งผู้ดูแลระบบ?', 'ผู้ใช้นี้จะเข้าถึงและแก้ไขข้อมูลได้ทั้งระบบ', 'แต่งตั้ง'))) return;
+      UI.btnLoading(btn, true, 'กำลังบันทึก...');
+      try {
+        let updated = editing;
+        for (const [action, data] of tasks) updated = await API.call(action, data);
+        const i = users.findIndex(u => u.user_id === updated.user_id);
+        users[i] = updated;
+        render();
+        modal.hide();
+        UI.toast('บันทึกเรียบร้อย');
+      } catch (err) { UI.error(err); }
+      UI.btnLoading(btn, false);
+    });
+  </script>
+</body>
+</html>

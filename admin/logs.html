@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>บันทึกการใช้งาน</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="../assets/css/style.css" rel="stylesheet">
+  <script src="../assets/js/theme.js"></script>
+</head>
+<body data-root="../">
+  <div class="app">
+    <aside class="sidebar offcanvas-lg offcanvas-start" tabindex="-1" id="sidebar"></aside>
+    <div class="app-main">
+      <header class="topbar" id="topbar"></header>
+      <main class="app-content">
+        <div class="page-head">
+          <div>
+            <h1>บันทึกการใช้งาน</h1>
+            <p>กิจกรรมล่าสุด 300 รายการในระบบ</p>
+          </div>
+          <div class="d-flex gap-2">
+            <div class="input-group" style="max-width:280px">
+              <span class="input-group-text"><i class="bi bi-search"></i></span>
+              <input type="search" class="form-control" id="q" placeholder="ค้นหา">
+            </div>
+            <button class="btn btn-soft" id="reloadBtn" aria-label="รีเฟรช"><i class="bi bi-arrow-clockwise"></i></button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="table-responsive">
+            <table class="table table-hover table-cards">
+              <thead><tr><th>เวลา</th><th>ผู้ใช้</th><th>การกระทำ</th><th>รายละเอียด</th></tr></thead>
+              <tbody id="tbody"><tr><td colspan="4"><div class="skeleton" style="height:160px"></div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/mock.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/layout.js"></script>
+  <script>
+    const me = Auth.require(['admin']);
+    const ACTIONS = {
+      register: ['สมัครสมาชิก', 'primary', 'person-plus'], verify: ['ยืนยันอีเมล', 'success', 'envelope-check'],
+      login: ['เข้าสู่ระบบ', 'info', 'box-arrow-in-right'], logout: ['ออกจากระบบ', 'secondary', 'box-arrow-right'],
+      forgot_password: ['ขอรีเซ็ตรหัสผ่าน', 'warning', 'key'], reset_password: ['ตั้งรหัสผ่านใหม่', 'warning', 'key-fill'],
+      change_password: ['เปลี่ยนรหัสผ่าน', 'warning', 'shield-lock'], update_profile: ['แก้ไขข้อมูลส่วนตัว', 'primary', 'person-gear'],
+      fy_save: ['บันทึกปีงบประมาณ', 'purple', 'calendar-check'], fy_delete: ['ลบปีงบประมาณ', 'danger', 'calendar-x'],
+      user_role: ['เปลี่ยนบทบาท', 'purple', 'person-badge'], user_status: ['เปลี่ยนสถานะ', 'danger', 'toggle-on'],
+      settings_save: ['บันทึกตั้งค่า', 'secondary', 'sliders']
+    };
+    let logs = [];
+
+    if (me) {
+      Layout.init(me, { active: 'logs', title: 'บันทึกการใช้งาน' });
+      load();
+      UI.$('#q').addEventListener('input', render);
+      UI.$('#reloadBtn').addEventListener('click', load);
+    }
+
+    async function load() {
+      try { logs = await API.call('logs.list'); render(); }
+      catch (err) { UI.error(err); }
+    }
+
+    function render() {
+      const q = UI.$('#q').value.trim().toLowerCase();
+      const list = logs.filter(l => !q || [l.user_name, l.user_email, l.action, l.detail, (ACTIONS[l.action] || [])[0]].join(' ').toLowerCase().includes(q));
+      if (!list.length) {
+        UI.$('#tbody').innerHTML = '<tr><td colspan="4" data-label=""><div class="empty-state"><div class="icon soft-primary"><i class="bi bi-clock-history"></i></div><h5>ไม่มีบันทึก</h5></div></td></tr>';
+        return;
+      }
+      UI.$('#tbody').innerHTML = list.map(l => {
+        const a = ACTIONS[l.action] || [l.action, 'secondary', 'dot'];
+        return `<tr>
+          <td data-label="เวลา" class="text-nowrap small">${UI.thaiDate(l.timestamp, true)}</td>
+          <td data-label="ผู้ใช้"><div class="fw-semibold small">${UI.esc(l.user_name || '-')}</div><div class="small text-muted text-break">${UI.esc(l.user_email)}</div></td>
+          <td data-label="การกระทำ"><span class="badge-soft ${a[1]}"><i class="bi bi-${a[2]}"></i>${UI.esc(a[0])}</span></td>
+          <td data-label="รายละเอียด" class="small text-muted text-break">${UI.esc(l.detail || '-')}</td>
+        </tr>`;
+      }).join('');
+    }
+  </script>
+</body>
+</html>

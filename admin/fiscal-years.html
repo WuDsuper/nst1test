@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ปีงบประมาณ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="../assets/css/style.css" rel="stylesheet">
+  <script src="../assets/js/theme.js"></script>
+</head>
+<body data-root="../">
+  <div class="app">
+    <aside class="sidebar offcanvas-lg offcanvas-start" tabindex="-1" id="sidebar"></aside>
+    <div class="app-main">
+      <header class="topbar" id="topbar"></header>
+      <main class="app-content">
+        <div class="page-head">
+          <div>
+            <h1>ปีงบประมาณ</h1>
+            <p>โครงการทั้งหมดจะถูกจัดกลุ่มตามปีงบประมาณ ปีที่ตั้งเป็น “ปีปัจจุบัน” จะแสดงเป็นค่าเริ่มต้น</p>
+          </div>
+          <button class="btn btn-primary" id="addBtn"><i class="bi bi-plus-lg me-1"></i>เพิ่มปีงบประมาณ</button>
+        </div>
+        <div class="row g-3" id="list">
+          <div class="col-md-6 col-xl-4"><div class="skeleton" style="height:180px;border-radius:18px"></div></div>
+          <div class="col-md-6 col-xl-4"><div class="skeleton" style="height:180px;border-radius:18px"></div></div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div class="modal fade" id="fyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <form class="modal-content" id="fyForm" novalidate>
+        <div class="modal-header">
+          <h5 class="modal-title" id="fyTitle">เพิ่มปีงบประมาณ</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="fy_id">
+          <div class="mb-3">
+            <label class="form-label" for="year">ปีงบประมาณ (พ.ศ.)</label>
+            <input type="number" class="form-control form-control-lg font-prompt" id="year" name="year" min="2500" max="2700" required>
+            <div class="form-text">ระบบจะกำหนดวันที่ 1 ต.ค. – 30 ก.ย. ให้อัตโนมัติ (แก้ไขได้)</div>
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-6">
+              <label class="form-label" for="start_date">วันเริ่มต้น</label>
+              <input type="date" class="form-control" id="start_date" name="start_date" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label" for="end_date">วันสิ้นสุด</label>
+              <input type="date" class="form-control" id="end_date" name="end_date" required>
+            </div>
+          </div>
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" role="switch" id="is_active" name="is_active">
+            <label class="form-check-label" for="is_active">ตั้งเป็นปีงบประมาณปัจจุบัน</label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">ยกเลิก</button>
+          <button type="submit" class="btn btn-primary" id="saveBtn"><i class="bi bi-check2 me-1"></i>บันทึก</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/mock.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/layout.js"></script>
+  <script>
+    const me = Auth.require(['admin']);
+    const modal = new bootstrap.Modal('#fyModal');
+    const form = UI.$('#fyForm');
+    let items = [];
+
+    if (me) {
+      Layout.init(me, { active: 'fy', title: 'ปีงบประมาณ' });
+      load();
+    }
+
+    async function load() {
+      try { items = await API.call('fy.list'); render(); }
+      catch (err) { UI.error(err); }
+    }
+
+    function render() {
+      if (!items.length) {
+        UI.$('#list').innerHTML = `<div class="col-12"><div class="card"><div class="empty-state">
+          <div class="icon soft-primary"><i class="bi bi-calendar-plus"></i></div><h5>ยังไม่มีปีงบประมาณ</h5>
+          <p>เพิ่มปีงบประมาณก่อนสร้างโครงการ</p></div></div></div>`;
+        return;
+      }
+      const today = new Date().toISOString().slice(0, 10);
+      UI.$('#list').innerHTML = items.map((f, i) => {
+        const active = f.is_active === 'TRUE';
+        const running = f.start_date <= today && today <= f.end_date;
+        return `<div class="col-md-6 col-xl-4 fade-up" style="animation-delay:${i * 50}ms">
+          <div class="card fy-card ${active ? 'is-active' : ''}">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+              <div>
+                <div class="small text-muted mb-1">ปีงบประมาณ</div>
+                <div class="fy-year ${active ? 'text-gradient' : ''}">${UI.esc(f.year)}</div>
+              </div>
+              <div class="d-flex flex-column align-items-end gap-1">
+                ${active ? '<span class="badge-soft primary"><i class="bi bi-star-fill"></i>ปีปัจจุบัน</span>' : ''}
+                ${running ? '<span class="badge-soft success"><i class="bi bi-circle-fill" style="font-size:.5rem"></i>อยู่ในช่วงเวลา</span>' : ''}
+              </div>
+            </div>
+            <div class="d-flex align-items-center gap-2 text-muted small mb-4">
+              <i class="bi bi-calendar-range"></i>${UI.thaiDate(f.start_date)} – ${UI.thaiDate(f.end_date)}
+            </div>
+            <div class="d-flex gap-2 mt-auto">
+              ${active ? '' : `<button class="btn btn-sm btn-soft" data-activate="${f.fy_id}"><i class="bi bi-star me-1"></i>ตั้งเป็นปีปัจจุบัน</button>`}
+              <button class="btn btn-sm btn-light ms-auto" data-edit="${f.fy_id}" title="แก้ไข" aria-label="แก้ไข"><i class="bi bi-pencil"></i></button>
+              <button class="btn btn-sm btn-soft-danger" data-del="${f.fy_id}" title="ลบ" aria-label="ลบ"><i class="bi bi-trash"></i></button>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function openModal(f) {
+      form.reset();
+      form.classList.remove('was-validated');
+      UI.$('#fyTitle').textContent = f ? 'แก้ไขปีงบประมาณ' : 'เพิ่มปีงบประมาณ';
+      if (f) UI.fillForm(form, f);
+      else {
+        const next = items.length ? Math.max(...items.map(x => Number(x.year))) + 1 : UI.currentFY();
+        UI.fillForm(form, { fy_id: '', year: next, ...UI.fyRange(next), is_active: items.length === 0 });
+      }
+      modal.show();
+    }
+
+    form.year.addEventListener('input', () => {
+      const y = parseInt(form.year.value, 10);
+      if (y >= 2500 && y <= 2700) UI.fillForm(form, UI.fyRange(y));
+    });
+
+    UI.$('#addBtn').addEventListener('click', () => openModal(null));
+
+    UI.$('#list').addEventListener('click', async e => {
+      const ed = e.target.closest('[data-edit]');
+      const del = e.target.closest('[data-del]');
+      const act = e.target.closest('[data-activate]');
+      if (ed) openModal(items.find(x => x.fy_id === ed.dataset.edit));
+      if (act) {
+        const f = items.find(x => x.fy_id === act.dataset.activate);
+        try { await API.call('fy.save', { ...f, is_active: true }); UI.toast(`ตั้งปี ${f.year} เป็นปีปัจจุบันแล้ว`); load(); }
+        catch (err) { UI.error(err); }
+      }
+      if (del) {
+        const f = items.find(x => x.fy_id === del.dataset.del);
+        if (!(await UI.confirm(`ลบปีงบประมาณ ${f.year}?`, 'ลบได้เฉพาะปีที่ยังไม่มีโครงการ', 'ลบ'))) return;
+        try { await API.call('fy.delete', { fy_id: f.fy_id }); UI.toast('ลบเรียบร้อย'); load(); }
+        catch (err) { UI.error(err); }
+      }
+    });
+
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      if (!form.checkValidity()) { form.classList.add('was-validated'); return; }
+      const d = UI.formData(form);
+      d.is_active = form.is_active.checked;
+      const btn = UI.$('#saveBtn');
+      UI.btnLoading(btn, true, 'กำลังบันทึก...');
+      try {
+        await API.call('fy.save', d);
+        modal.hide();
+        UI.toast('บันทึกเรียบร้อย');
+        load();
+      } catch (err) { UI.error(err); }
+      UI.btnLoading(btn, false);
+    });
+  </script>
+</body>
+</html>
