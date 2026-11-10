@@ -6,7 +6,9 @@ const Layout = (() => {
       { key: 'dashboard', icon: 'grid-1x2', label: 'แดชบอร์ด', href: 'admin/dashboard.html' },
       { section: 'การฝึกอบรม' },
       { key: 'projects', icon: 'folder2-open', label: 'โครงการทั้งหมด', href: 'creator/projects.html' },
+      { key: 'activities', icon: 'list-check', label: 'กิจกรรม', href: 'creator/activities.html' },
       { key: 'participants', icon: 'person-check', label: 'ผู้เข้าร่วม', href: 'creator/participants.html' },
+      { key: 'grading', icon: 'clipboard-check', label: 'ตรวจงาน', href: 'creator/grading.html' },
       { key: 'reports', icon: 'bar-chart-line', label: 'รายงานผล', soon: true },
       { section: 'จัดการระบบ' },
       { key: 'users', icon: 'people', label: 'ผู้ใช้งาน', href: 'admin/users.html' },
@@ -19,8 +21,9 @@ const Layout = (() => {
       { key: 'dashboard', icon: 'grid-1x2', label: 'แดชบอร์ด', href: 'creator/dashboard.html' },
       { section: 'หลักสูตรของฉัน' },
       { key: 'projects', icon: 'folder2-open', label: 'โครงการของฉัน', href: 'creator/projects.html' },
+      { key: 'activities', icon: 'list-check', label: 'กิจกรรม', href: 'creator/activities.html' },
       { key: 'participants', icon: 'person-check', label: 'ผู้เข้าร่วม', href: 'creator/participants.html' },
-      { key: 'grading', icon: 'clipboard-check', label: 'ตรวจงาน', soon: true },
+      { key: 'grading', icon: 'clipboard-check', label: 'ตรวจงาน', href: 'creator/grading.html' },
       { key: 'reports', icon: 'bar-chart-line', label: 'รายงานผล', soon: true }
     ],
     user: [

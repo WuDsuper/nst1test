@@ -1,516 +1,314 @@
 /**
- * โหมดทดลอง (Demo mode)
- * จำลอง API ของ Apps Script ด้วย localStorage ใช้เมื่อ APP_CONFIG.API_URL ว่าง
+ * โหมดทดลอง (Demo mode) — ใช้เมื่อ APP_CONFIG.API_URL ว่าง
+ * จำลอง Google Sheets / Drive / Mail ไว้ในเบราว์เซอร์ แล้วรัน "โค้ด Apps Script ตัวจริง"
+ * จาก assets/js/gas-bundle.js (สร้างด้วย tools/build-demo.sh) ผลลัพธ์จึงตรงกับระบบจริง
  * ข้อมูลอยู่ในเบราว์เซอร์นี้เท่านั้น ล้างได้ด้วย Mock.reset()
  * บัญชีทดลอง: admin@demo.local / admin1234, creator@demo.local / creator1234, user@demo.local / user1234
  */
 const Mock = (() => {
-  const KEY = 'tms_mock_db_v2';
-  const now = () => new Date().toISOString();
-  const addH = h => new Date(Date.now() + h * 3600e3).toISOString();
+  const KEY = 'tms_demo_sheets_v3';
+  let G = null;
+  let store = null;
+  let mails = [];
+
+  const root = () => (document.body && document.body.dataset.root) || '';
   const uid = () => (window.crypto && crypto.randomUUID) ? crypto.randomUUID()
-    : 'id-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
-  const tok = () => (uid() + uid()).replace(/-/g, '');
-  const MONTHS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-  const ROLES = ['admin', 'creator', 'user'];
-  const PROFILE = ['prefix', 'first_name', 'last_name', 'position', 'organization', 'phone'];
-  const SETTING_KEYS = ['site_name', 'org_name', 'logo_url', 'theme_color', 'frontend_url'];
+    : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); });
 
-  function fyNow() { const d = new Date(); return d.getFullYear() + 543 + (d.getMonth() >= 9 ? 1 : 0); }
-  function fyRange(y) { return { start_date: (y - 544) + '-10-01', end_date: (y - 543) + '-09-30' }; }
-
-  function seed() {
-    const mk = (email, password, role, prefix, first, last, position, org, status, daysAgo) => ({
-      user_id: uid(), email, password, prefix, first_name: first, last_name: last, position, organization: org, phone: '',
-      role, status, verify_token: '', verify_expires: '', verify_sent_at: '', reset_token: '', reset_expires: '',
-      created_at: new Date(Date.now() - daysAgo * 864e5).toISOString(), last_login: ''
-    });
-    const users = [
-      mk('admin@demo.local', 'admin1234', 'admin', 'นาย', 'ผู้ดูแล', 'ระบบ', 'ผู้ดูแลระบบ', 'หน่วยงานตัวอย่าง', 'active', 300),
-      mk('creator@demo.local', 'creator1234', 'creator', 'นางสาว', 'สมหญิง', 'ใจดี', 'ศึกษานิเทศก์', 'สำนักงานเขตพื้นที่การศึกษาตัวอย่าง', 'active', 200),
-      mk('user@demo.local', 'user1234', 'user', 'นาย', 'สมชาย', 'รักเรียน', 'ครู', 'โรงเรียนบ้านตัวอย่าง', 'active', 45)
-    ];
-    [['นาง', 'มาลี', 'สุขใจ'], ['นาย', 'วิชัย', 'เก่งงาน'], ['นางสาว', 'ปวีณา', 'ศรีสุข'], ['นาย', 'ธนพล', 'มั่นคง'],
-     ['นาง', 'กมลา', 'แสงทอง'], ['นาย', 'อนุชา', 'ทองดี'], ['นางสาว', 'ศิริพร', 'วงศ์ใหญ่']].forEach((n, i) => {
-      users.push(mk(`teacher${i + 1}@demo.local`, 'demo1234', 'user', n[0], n[1], n[2], 'ครู',
-        'โรงเรียนตัวอย่าง ' + (i + 1), i === 6 ? 'pending' : 'active', 5 + i * 40));
-    });
-    const y = fyNow();
-    const fyCur = { fy_id: uid(), year: String(y), ...fyRange(y), is_active: 'TRUE' };
-    const fyPrev = { fy_id: uid(), year: String(y - 1), ...fyRange(y - 1), is_active: 'FALSE' };
-    const day = n => { const d = new Date(Date.now() + n * 864e5); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
-    const creator = users[1].user_id;
-    const mkP = (o) => ({
-      project_id: uid(), code: '', description: '', objectives: '', cover_url: '', owner_id: creator,
-      start_date: '', end_date: '', reg_open: '', reg_close: '', capacity: '', enroll_mode: 'auto', pass_criteria: '80',
-      status: 'published', hours: '', format: 'online', location: '', drive_folder_id: '', created_at: now(), updated_at: now(), ...o
-    });
-    const projects = [
-      mkP({ fy_id: fyCur.fy_id, code: `P${y}-001`, title: 'พัฒนาครูสู่การจัดการเรียนรู้เชิงรุก (Active Learning)',
-        description: 'โครงการพัฒนาครูให้มีความรู้และทักษะการออกแบบการจัดการเรียนรู้เชิงรุก\nเรียนรู้ผ่านกิจกรรมออนไลน์ ทำแบบทดสอบก่อน-หลัง และส่งแผนการจัดการเรียนรู้',
-        objectives: '1. เพื่อให้ครูเข้าใจหลักการจัดการเรียนรู้เชิงรุก\n2. เพื่อให้ครูออกแบบแผนการจัดการเรียนรู้ได้\n3. เพื่อแลกเปลี่ยนเรียนรู้ผ่านชุมชนการเรียนรู้ทางวิชาชีพ',
-        start_date: day(10), end_date: day(40), reg_open: day(-5), reg_close: day(9), capacity: '50', hours: '12', format: 'online' }),
-      mkP({ fy_id: fyCur.fy_id, code: `P${y}-002`, title: 'การใช้ AI และเทคโนโลยีดิจิทัลเพื่อการศึกษา',
-        description: 'อบรมเชิงปฏิบัติการการใช้เครื่องมือ AI ช่วยสร้างสื่อและออกแบบการสอน', objectives: 'ครูสามารถใช้เครื่องมือดิจิทัลสร้างสื่อการสอนได้',
-        start_date: day(20), end_date: day(22), reg_open: day(-2), reg_close: day(15), capacity: '30', hours: '18',
-        format: 'hybrid', location: 'ห้องประชุมสำนักงานเขตพื้นที่การศึกษา', enroll_mode: 'approval' }),
-      mkP({ fy_id: fyCur.fy_id, code: `P${y}-003`, title: 'การวัดและประเมินผลตามสภาพจริง', description: 'อยู่ระหว่างจัดเตรียมเนื้อหา',
-        status: 'draft', hours: '6', start_date: day(60), end_date: day(61) }),
-      mkP({ fy_id: fyPrev.fy_id, code: `P${y - 1}-001`, title: 'การนิเทศภายในโรงเรียนแบบกัลยาณมิตร', description: 'โครงการปีงบประมาณที่ผ่านมา',
-        status: 'closed', hours: '9', start_date: day(-200), end_date: day(-190), reg_open: day(-230), reg_close: day(-201) })
-    ];
-    const en = (p, u, status, days) => ({ enroll_id: uid(), project_id: p.project_id, user_id: u.user_id, status,
-      enrolled_at: new Date(Date.now() - days * 864e5).toISOString(), completed_at: status === 'completed' ? now() : '' });
-    const enrollments = [
-      en(projects[0], users[2], 'approved', 3), en(projects[0], users[3], 'approved', 4), en(projects[0], users[4], 'approved', 2),
-      en(projects[0], users[5], 'approved', 1), en(projects[1], users[3], 'pending', 1), en(projects[1], users[6], 'pending', 1),
-      en(projects[1], users[7], 'approved', 2), en(projects[3], users[2], 'completed', 210), en(projects[3], users[4], 'completed', 210)
-    ];
-    return {
-      users, sessions: [], projects, enrollments, logs: [],
-      fiscalYears: [fyCur, fyPrev],
-      settings: { site_name: 'ระบบฝึกอบรมออนไลน์', org_name: 'หน่วยงานตัวอย่าง (โหมดทดลอง)', logo_url: '', theme_color: '#4F46E5', frontend_url: '' }
+  /* ---------- SHA-256 (sync) สำหรับ Utilities.computeDigest ---------- */
+  const SHA = (() => {
+    const primes = [];
+    for (let n = 2; primes.length < 64; n++) if (primes.every(p => n % p)) primes.push(n);
+    const frac = x => ((x - Math.floor(x)) * 4294967296) >>> 0;
+    const K = primes.map(p => frac(Math.cbrt(p)));
+    const H0 = primes.slice(0, 8).map(p => frac(Math.sqrt(p)));
+    const ror = (x, n) => (x >>> n) | (x << (32 - n));
+    return str => {
+      const bytes = new TextEncoder().encode(str);
+      const len = bytes.length;
+      const buf = new Uint8Array(((len + 9 + 63) >> 6) << 6);
+      buf.set(bytes);
+      buf[len] = 0x80;
+      const dv = new DataView(buf.buffer);
+      dv.setUint32(buf.length - 4, (len * 8) >>> 0);
+      dv.setUint32(buf.length - 8, Math.floor(len * 8 / 4294967296));
+      const H = H0.slice();
+      const W = new Uint32Array(64);
+      for (let off = 0; off < buf.length; off += 64) {
+        for (let i = 0; i < 16; i++) W[i] = dv.getUint32(off + i * 4);
+        for (let i = 16; i < 64; i++) {
+          const a = W[i - 15], b = W[i - 2];
+          W[i] = (W[i - 16] + (ror(a, 7) ^ ror(a, 18) ^ (a >>> 3)) + W[i - 7] + (ror(b, 17) ^ ror(b, 19) ^ (b >>> 10))) >>> 0;
+        }
+        let [a, b, c, d, e, f, g, h] = H;
+        for (let i = 0; i < 64; i++) {
+          const t1 = (h + (ror(e, 6) ^ ror(e, 11) ^ ror(e, 25)) + ((e & f) ^ (~e & g)) + K[i] + W[i]) >>> 0;
+          const t2 = ((ror(a, 2) ^ ror(a, 13) ^ ror(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) >>> 0;
+          h = g; g = f; f = e; e = (d + t1) >>> 0; d = c; c = b; b = a; a = (t1 + t2) >>> 0;
+        }
+        [a, b, c, d, e, f, g, h].forEach((v, i) => { H[i] = (H[i] + v) >>> 0; });
+      }
+      const out = [];
+      H.forEach(w => { for (let s = 24; s >= 0; s -= 8) { const v = (w >>> s) & 255; out.push(v > 127 ? v - 256 : v); } });
+      return out;
     };
+  })();
+
+  /* ---------- จำลอง SpreadsheetApp ---------- */
+  function rowsOf(name) { return store.sheets[name]; }
+  function makeRange(name, r, c, nr, nc) {
+    const rg = {
+      getDisplayValues() {
+        const out = [];
+        for (let i = 0; i < nr; i++) {
+          const row = rowsOf(name)[r - 1 + i] || [];
+          const o = [];
+          for (let j = 0; j < nc; j++) { const v = row[c - 1 + j]; o.push(v === undefined || v === null ? '' : String(v)); }
+          out.push(o);
+        }
+        return out;
+      },
+      setValues(vals) {
+        const rows = rowsOf(name);
+        vals.forEach((v, i) => {
+          const idx = r - 1 + i;
+          while (rows.length <= idx) rows.push([]);
+          const row = rows[idx];
+          v.forEach((x, j) => {
+            while (row.length < c - 1 + j) row.push('');
+            row[c - 1 + j] = x === true ? 'TRUE' : x === false ? 'FALSE' : String(x === undefined || x === null ? '' : x);
+          });
+        });
+        return rg;
+      },
+      setNumberFormat() { return rg; }, setFontWeight() { return rg; }, setBackground() { return rg; }, setFontColor() { return rg; }
+    };
+    rg.getValues = rg.getDisplayValues;
+    return rg;
   }
-
-  function load() {
-    let db = null;
-    try { db = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { }
-    if (!db) { db = seed(); save(db); }
-    return db;
+  function makeSheet(name) {
+    const sh = {
+      getName: () => name,
+      getLastRow: () => rowsOf(name).length,
+      getLastColumn: () => rowsOf(name).reduce((m, r) => Math.max(m, r.length), 0),
+      getMaxRows: () => Math.max(1000, rowsOf(name).length),
+      getMaxColumns: () => Math.max(26, sh.getLastColumn()),
+      setFrozenRows() { },
+      deleteRow(r) { rowsOf(name).splice(r - 1, 1); },
+      appendRow(v) { rowsOf(name).push(v.map(String)); },
+      getRange(r, c, nr = 1, nc = 1) { return makeRange(name, r, c, nr, nc); }
+    };
+    return sh;
   }
-  function save(db) { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) { } }
-
-  class MockError extends Error { constructor(msg, code) { super(msg); this.code = code || ''; } }
-  const fail = (msg, code) => { throw new MockError(msg, code); };
-
-  const pub = u => ({
-    user_id: u.user_id, email: u.email, prefix: u.prefix, first_name: u.first_name, last_name: u.last_name,
-    position: u.position, organization: u.organization, phone: u.phone, role: u.role, status: u.status,
-    created_at: u.created_at, last_login: u.last_login
-  });
-  const norm = e => String(e || '').trim().toLowerCase();
-  const clean = (s, max = 200) => String(s ?? '').trim().slice(0, max);
-  const log = (db, user_id, action, detail = '') => db.logs.push({ timestamp: now(), user_id, action, detail });
-
-  const ENROLL_ACTIVE = ['pending', 'approved', 'completed'];
-  const todayStr = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
-  const fname = u => u ? `${u.prefix || ''}${u.first_name || ''} ${u.last_name || ''}`.trim() : '';
-  const canManage = (u, p) => !!u && (u.role === 'admin' || (u.role === 'creator' && p.owner_id === u.user_id));
-  function optUser(db, token) { try { return token ? requireUser(db, token) : null; } catch (e) { return null; } }
-  function view(db, p, me) {
-    const en = db.enrollments.filter(e => e.project_id === p.project_id);
-    const cnt = st => en.filter(e => st.includes(e.status)).length;
-    const mine = me ? en.find(e => e.user_id === me.user_id) : null;
-    const fy = db.fiscalYears.find(f => f.fy_id === p.fy_id);
-    const v = { ...p };
-    delete v.drive_folder_id;
-    Object.assign(v, {
-      fy_year: fy ? fy.year : '', owner_name: fname(db.users.find(u => u.user_id === p.owner_id)),
-      enrolled: cnt(ENROLL_ACTIVE), approved: cnt(['approved', 'completed']),
-      my_status: mine ? mine.status : '', my_enroll_id: mine ? mine.enroll_id : '', can_edit: canManage(me, p)
-    });
-    if (v.can_edit) { v.pending = cnt(['pending']); v.rejected = cnt(['rejected']); }
-    return v;
-  }
-
-  function requireUser(db, token, roles) {
-    const s = db.sessions.find(x => x.session_token === token);
-    if (!token || !s || new Date(s.expires_at) < new Date()) fail('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่', 'AUTH');
-    const u = db.users.find(x => x.user_id === s.user_id);
-    if (!u || u.status !== 'active') fail('บัญชีนี้ไม่สามารถใช้งานได้', 'AUTH');
-    if (roles && !roles.includes(u.role)) fail('คุณไม่มีสิทธิ์ใช้งานส่วนนี้', 'FORBIDDEN');
-    return u;
-  }
-
-  const routes = {
-    register(db, d) {
-      const email = norm(d.email);
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) fail('รูปแบบอีเมลไม่ถูกต้อง');
-      if (String(d.password || '').length < 8) fail('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร');
-      if (!clean(d.first_name) || !clean(d.last_name)) fail('กรุณากรอกชื่อและนามสกุล');
-      const ex = db.users.find(u => u.email === email);
-      if (ex) {
-        if (ex.status === 'pending') fail('อีเมลนี้สมัครไว้แล้วแต่ยังไม่ได้ยืนยัน กรุณาตรวจสอบกล่องอีเมล หรือขอส่งอีเมลยืนยันอีกครั้ง', 'NOT_VERIFIED');
-        fail('อีเมลนี้ถูกใช้สมัครสมาชิกแล้ว');
-      }
-      const u = {
-        user_id: uid(), email, password: d.password, role: 'user', status: 'pending',
-        verify_token: tok(), verify_expires: addH(24), verify_sent_at: now(), reset_token: '', reset_expires: '',
-        created_at: now(), last_login: ''
-      };
-      PROFILE.forEach(k => { u[k] = clean(d[k]); });
-      db.users.push(u);
-      log(db, u.user_id, 'register', email);
-      return { email, demo_link: 'verify.html?token=' + u.verify_token };
-    },
-    verifyEmail(db, d) {
-      const u = d.token && db.users.find(x => x.verify_token === d.token);
-      if (!u) fail('ลิงก์ยืนยันไม่ถูกต้อง หรือถูกใช้งานไปแล้ว');
-      if (new Date(u.verify_expires) < new Date()) fail('ลิงก์ยืนยันหมดอายุแล้ว กรุณาขอส่งอีเมลยืนยันใหม่', 'EXPIRED');
-      Object.assign(u, { status: 'active', verify_token: '', verify_expires: '' });
-      log(db, u.user_id, 'verify', u.email);
-      return { email: u.email };
-    },
-    resendVerify(db, d) {
-      const u = db.users.find(x => x.email === norm(d.email));
-      if (!u) fail('ไม่พบอีเมลนี้ในระบบ');
-      if (u.status !== 'pending') fail('บัญชีนี้ยืนยันอีเมลแล้ว สามารถเข้าสู่ระบบได้ทันที');
-      Object.assign(u, { verify_token: tok(), verify_expires: addH(24), verify_sent_at: now() });
-      return { email: u.email, demo_link: 'verify.html?token=' + u.verify_token };
-    },
-    login(db, d) {
-      const u = db.users.find(x => x.email === norm(d.email));
-      if (!u || u.password !== d.password) fail('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
-      if (u.status === 'pending') fail('กรุณายืนยันอีเมลก่อนเข้าสู่ระบบ', 'NOT_VERIFIED');
-      if (u.status !== 'active') fail('บัญชีนี้ถูกระงับการใช้งาน กรุณาติดต่อผู้ดูแลระบบ');
-      const token = tok();
-      db.sessions.push({ session_token: token, user_id: u.user_id, created_at: now(), expires_at: addH(24 * 7) });
-      u.last_login = now();
-      log(db, u.user_id, 'login', u.email);
-      return { token, user: pub(u) };
-    },
-    logout(db, d, token) {
-      const s = db.sessions.find(x => x.session_token === token);
-      db.sessions = db.sessions.filter(x => x.session_token !== token);
-      if (s) log(db, s.user_id, 'logout');
-      return true;
-    },
-    me(db, d, token) { return pub(requireUser(db, token)); },
-    forgotPassword(db, d) {
-      const u = db.users.find(x => x.email === norm(d.email));
-      if (u && u.status === 'active') {
-        Object.assign(u, { reset_token: tok(), reset_expires: addH(1) });
-        log(db, u.user_id, 'forgot_password', u.email);
-        return { sent: true, demo_link: 'reset-password.html?token=' + u.reset_token };
-      }
-      return { sent: true };
-    },
-    resetPassword(db, d) {
-      if (String(d.password || '').length < 8) fail('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร');
-      const u = d.token && db.users.find(x => x.reset_token === d.token);
-      if (!u) fail('ลิงก์รีเซ็ตรหัสผ่านไม่ถูกต้อง หรือถูกใช้งานไปแล้ว');
-      if (new Date(u.reset_expires) < new Date()) fail('ลิงก์หมดอายุแล้ว กรุณาขอรีเซ็ตรหัสผ่านใหม่', 'EXPIRED');
-      Object.assign(u, { password: d.password, reset_token: '', reset_expires: '' });
-      db.sessions = db.sessions.filter(s => s.user_id !== u.user_id);
-      log(db, u.user_id, 'reset_password', u.email);
-      return true;
-    },
-    changePassword(db, d, token) {
-      const u = requireUser(db, token);
-      if (u.password !== d.old_password) fail('รหัสผ่านเดิมไม่ถูกต้อง');
-      if (String(d.new_password || '').length < 8) fail('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร');
-      u.password = d.new_password;
-      db.sessions = db.sessions.filter(s => s.user_id !== u.user_id || s.session_token === token);
-      log(db, u.user_id, 'change_password');
-      return true;
-    },
-    updateProfile(db, d, token) {
-      const u = requireUser(db, token);
-      const patch = {};
-      PROFILE.forEach(k => { if (d[k] !== undefined) patch[k] = clean(d[k]); });
-      if (patch.first_name === '' || patch.last_name === '') fail('กรุณากรอกชื่อและนามสกุล');
-      Object.assign(u, patch);
-      log(db, u.user_id, 'update_profile');
-      return pub(u);
-    },
-
-    'fy.list'(db) { return db.fiscalYears.slice().sort((a, b) => b.year - a.year); },
-    'fy.save'(db, d, token) {
-      const a = requireUser(db, token, ['admin']);
-      const year = parseInt(d.year, 10);
-      if (!(year >= 2500 && year <= 2700)) fail('กรุณาระบุปีงบประมาณเป็น พ.ศ. เช่น 2569');
-      if (!d.start_date || !d.end_date) fail('กรุณาระบุวันเริ่มต้นและวันสิ้นสุด');
-      if (d.start_date >= d.end_date) fail('วันเริ่มต้นต้องมาก่อนวันสิ้นสุด');
-      if (db.fiscalYears.some(f => Number(f.year) === year && f.fy_id !== d.fy_id)) fail('มีปีงบประมาณ ' + year + ' อยู่แล้ว');
-      const active = d.is_active === true || d.is_active === 'TRUE';
-      if (active) db.fiscalYears.forEach(f => { if (f.fy_id !== d.fy_id) f.is_active = 'FALSE'; });
-      const rec = { year: String(year), start_date: d.start_date, end_date: d.end_date, is_active: active ? 'TRUE' : 'FALSE' };
-      let saved;
-      if (d.fy_id) {
-        saved = db.fiscalYears.find(f => f.fy_id === d.fy_id);
-        if (!saved) fail('ไม่พบปีงบประมาณที่ต้องการแก้ไข');
-        Object.assign(saved, rec);
-      } else {
-        saved = { fy_id: uid(), ...rec };
-        db.fiscalYears.push(saved);
-      }
-      log(db, a.user_id, 'fy_save', 'ปีงบประมาณ ' + year);
-      return saved;
-    },
-    'fy.delete'(db, d, token) {
-      const a = requireUser(db, token, ['admin']);
-      const f = db.fiscalYears.find(x => x.fy_id === d.fy_id);
-      if (!f) fail('ไม่พบปีงบประมาณ');
-      if (db.projects.some(p => p.fy_id === d.fy_id)) fail('ไม่สามารถลบได้ เนื่องจากมีโครงการอยู่ในปีงบประมาณนี้');
-      db.fiscalYears = db.fiscalYears.filter(x => x.fy_id !== d.fy_id);
-      log(db, a.user_id, 'fy_delete', 'ปีงบประมาณ ' + f.year);
-      return true;
-    },
-
-    'user.list'(db, d, token) {
-      requireUser(db, token, ['admin']);
-      return db.users.map(pub).sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
-    },
-    'user.setRole'(db, d, token) {
-      const a = requireUser(db, token, ['admin']);
-      if (!ROLES.includes(d.role)) fail('บทบาทไม่ถูกต้อง');
-      if (d.user_id === a.user_id) fail('ไม่สามารถเปลี่ยนบทบาทของตนเองได้');
-      const u = db.users.find(x => x.user_id === d.user_id);
-      if (!u) fail('ไม่พบผู้ใช้');
-      u.role = d.role;
-      log(db, a.user_id, 'user_role', u.email + ' → ' + d.role);
-      return pub(u);
-    },
-    'user.setStatus'(db, d, token) {
-      const a = requireUser(db, token, ['admin']);
-      if (!['active', 'suspended'].includes(d.status)) fail('สถานะไม่ถูกต้อง');
-      if (d.user_id === a.user_id) fail('ไม่สามารถเปลี่ยนสถานะของตนเองได้');
-      const u = db.users.find(x => x.user_id === d.user_id);
-      if (!u) fail('ไม่พบผู้ใช้');
-      u.status = d.status;
-      if (d.status === 'active') { u.verify_token = ''; u.verify_expires = ''; }
-      if (d.status === 'suspended') db.sessions = db.sessions.filter(s => s.user_id !== u.user_id);
-      log(db, a.user_id, 'user_status', u.email + ' → ' + d.status);
-      return pub(u);
-    },
-
-    'project.list'(db, d, token) {
-      const scope = d.scope || 'public';
-      const me = scope === 'public' ? optUser(db, token) : requireUser(db, token, scope === 'all' ? ['admin'] : ['admin', 'creator']);
-      let list = db.projects;
-      if (d.fy_id) list = list.filter(p => p.fy_id === d.fy_id);
-      if (scope === 'public') list = list.filter(p => p.status === 'published');
-      else if (scope === 'mine') list = list.filter(p => p.owner_id === me.user_id);
-      return list.map(p => view(db, p, me)).sort((a, b) => ((b.start_date || b.created_at) > (a.start_date || a.created_at) ? 1 : -1));
-    },
-    'project.get'(db, d, token) {
-      const me = optUser(db, token);
-      const p = db.projects.find(x => x.project_id === d.project_id);
-      if (!p || (p.status === 'draft' && !canManage(me, p))) fail('ไม่พบโครงการ หรือโครงการยังไม่เผยแพร่');
-      return view(db, p, me);
-    },
-    'project.save'(db, d, token) {
-      const me = requireUser(db, token, ['admin', 'creator']);
-      const title = clean(d.title, 300);
-      if (!title) fail('กรุณากรอกชื่อโครงการ');
-      const fy = db.fiscalYears.find(f => f.fy_id === d.fy_id);
-      if (!fy) fail('กรุณาเลือกปีงบประมาณ');
-      if (d.start_date && d.end_date && d.start_date > d.end_date) fail('วันเริ่มอบรมต้องไม่หลังวันสิ้นสุด');
-      if (d.reg_open && d.reg_close && d.reg_open > d.reg_close) fail('วันเปิดรับสมัครต้องไม่หลังวันปิดรับสมัคร');
-      const num = (v, label, max) => {
-        if (v === '' || v == null) return '';
-        const n = Number(v);
-        if (!(n >= 0) || (max && n > max)) fail(label + 'ไม่ถูกต้อง');
-        return String(n);
-      };
-      let cur = null, owner = me.user_id;
-      if (d.project_id) {
-        cur = db.projects.find(p => p.project_id === d.project_id);
-        if (!cur) fail('ไม่พบโครงการที่ต้องการแก้ไข');
-        if (!canManage(me, cur)) fail('คุณไม่มีสิทธิ์แก้ไขโครงการนี้', 'FORBIDDEN');
-        owner = cur.owner_id;
-      }
-      if (me.role === 'admin' && d.owner_id) {
-        const o = db.users.find(u => u.user_id === d.owner_id);
-        if (!o || !['admin', 'creator'].includes(o.role)) fail('ผู้รับผิดชอบต้องเป็นผู้สร้างหลักสูตรหรือผู้ดูแลระบบ');
-        owner = d.owner_id;
-      }
-      let code = clean(d.code, 50);
-      if (!code) {
-        let n = db.projects.filter(p => p.fy_id === d.fy_id).length + 1;
-        do { code = 'P' + fy.year + '-' + String(n++).padStart(3, '0'); } while (db.projects.some(p => p.code === code));
-      } else if (db.projects.some(p => p.code === code && p.project_id !== d.project_id)) fail(`รหัสโครงการ "${code}" ซ้ำกับโครงการอื่น`);
-      const rec = {
-        fy_id: d.fy_id, code, title, description: clean(d.description, 5000), objectives: clean(d.objectives, 5000),
-        cover_url: clean(d.cover_url, 500), owner_id: owner, start_date: d.start_date || '', end_date: d.end_date || '',
-        reg_open: d.reg_open || '', reg_close: d.reg_close || '', capacity: num(d.capacity, 'จำนวนที่รับ'),
-        enroll_mode: ['auto', 'approval'].includes(d.enroll_mode) ? d.enroll_mode : 'auto',
-        pass_criteria: num(d.pass_criteria === '' || d.pass_criteria == null ? 80 : d.pass_criteria, 'เกณฑ์ผ่าน', 100),
-        status: ['draft', 'published', 'closed'].includes(d.status) ? d.status : 'draft',
-        hours: num(d.hours, 'จำนวนชั่วโมง'), format: ['online', 'onsite', 'hybrid'].includes(d.format) ? d.format : 'online',
-        location: clean(d.location, 300), updated_at: now()
-      };
-      let saved;
-      if (cur) saved = Object.assign(cur, rec);
-      else { saved = { project_id: uid(), created_at: now(), drive_folder_id: '', ...rec }; db.projects.push(saved); }
-      log(db, me.user_id, 'project_save', code + ' ' + title);
-      return view(db, saved, me);
-    },
-    'project.delete'(db, d, token) {
-      const me = requireUser(db, token, ['admin', 'creator']);
-      const p = db.projects.find(x => x.project_id === d.project_id);
-      if (!p) fail('ไม่พบโครงการ');
-      if (!canManage(me, p)) fail('คุณไม่มีสิทธิ์ลบโครงการนี้', 'FORBIDDEN');
-      if (db.enrollments.some(e => e.project_id === p.project_id)) fail('มีผู้ลงทะเบียนแล้ว ไม่สามารถลบได้ กรุณาเปลี่ยนสถานะเป็น "สิ้นสุดโครงการ" แทน');
-      db.projects = db.projects.filter(x => x.project_id !== p.project_id);
-      log(db, me.user_id, 'project_delete', p.code + ' ' + p.title);
-      return true;
-    },
-
-    'enroll.join'(db, d, token) {
-      const me = requireUser(db, token);
-      const p = db.projects.find(x => x.project_id === d.project_id);
-      if (!p || p.status !== 'published') fail('โครงการนี้ไม่เปิดรับสมัคร');
-      if (p.owner_id === me.user_id) fail('คุณเป็นผู้รับผิดชอบโครงการนี้ จึงลงทะเบียนเป็นผู้เข้าอบรมไม่ได้');
-      const t = todayStr();
-      if (p.reg_open && t < p.reg_open) fail('ยังไม่ถึงช่วงเวลารับสมัคร');
-      if (p.reg_close && t > p.reg_close) fail('ปิดรับสมัครแล้ว');
-      const en = db.enrollments.filter(e => e.project_id === p.project_id);
-      const mine = en.find(e => e.user_id === me.user_id);
-      if (mine) fail(mine.status === 'rejected' ? 'คุณไม่ผ่านการพิจารณาในโครงการนี้' : 'คุณลงทะเบียนโครงการนี้แล้ว');
-      const cap = parseInt(p.capacity, 10);
-      if (cap > 0 && en.filter(e => ENROLL_ACTIVE.includes(e.status)).length >= cap) fail('ขออภัย ที่นั่งเต็มแล้ว');
-      const rec = { enroll_id: uid(), project_id: p.project_id, user_id: me.user_id,
-        status: p.enroll_mode === 'approval' ? 'pending' : 'approved', enrolled_at: now(), completed_at: '' };
-      db.enrollments.push(rec);
-      log(db, me.user_id, 'enroll_join', p.code + ' ' + p.title);
-      return rec;
-    },
-    'enroll.cancel'(db, d, token) {
-      const me = requireUser(db, token);
-      const e = db.enrollments.find(x => x.enroll_id === d.enroll_id);
-      if (!e || e.user_id !== me.user_id) fail('ไม่พบการลงทะเบียน');
-      if (e.status === 'completed') fail('ผ่านการอบรมแล้ว ไม่สามารถยกเลิกได้');
-      db.enrollments = db.enrollments.filter(x => x.enroll_id !== e.enroll_id);
-      const p = db.projects.find(x => x.project_id === e.project_id);
-      log(db, me.user_id, 'enroll_cancel', p ? p.code + ' ' + p.title : '');
-      return true;
-    },
-    'enroll.my'(db, d, token) {
-      const me = requireUser(db, token);
-      return db.enrollments.filter(e => e.user_id === me.user_id)
-        .map(e => ({ e, p: db.projects.find(p => p.project_id === e.project_id) })).filter(x => x.p)
-        .map(({ e, p }) => ({ ...e, project: view(db, p, me) }))
-        .sort((a, b) => (a.enrolled_at < b.enrolled_at ? 1 : -1));
-    },
-    'enroll.listByProject'(db, d, token) {
-      const me = requireUser(db, token, ['admin', 'creator']);
-      const p = db.projects.find(x => x.project_id === d.project_id);
-      if (!p) fail('ไม่พบโครงการ');
-      if (!canManage(me, p)) fail('คุณไม่มีสิทธิ์ดูผู้เข้าร่วมโครงการนี้', 'FORBIDDEN');
-      const items = db.enrollments.filter(e => e.project_id === p.project_id).map(e => {
-        const u = db.users.find(x => x.user_id === e.user_id);
-        return { ...e, user: u ? pub(u) : { first_name: '(ผู้ใช้ถูกลบ)', last_name: '', email: '' } };
-      }).sort((a, b) => (a.enrolled_at < b.enrolled_at ? -1 : 1));
-      return { project: view(db, p, me), items };
-    },
-    'enroll.setStatus'(db, d, token) {
-      const me = requireUser(db, token, ['admin', 'creator']);
-      if (!['pending', 'approved', 'rejected', 'completed'].includes(d.status)) fail('สถานะไม่ถูกต้อง');
-      const ids = d.enroll_ids || [];
-      if (!ids.length) fail('กรุณาเลือกรายชื่อ');
-      let updated = 0;
-      db.enrollments.forEach(e => {
-        if (!ids.includes(e.enroll_id) || e.status === d.status) return;
-        const p = db.projects.find(x => x.project_id === e.project_id);
-        if (!p || !canManage(me, p)) return;
-        e.status = d.status;
-        e.completed_at = d.status === 'completed' ? now() : '';
-        updated++;
-      });
-      log(db, me.user_id, 'enroll_status', updated + ' รายการ → ' + d.status);
-      return { updated, mailed: 0, mail_failed: 0, demo: true };
-    },
-    'enroll.remove'(db, d, token) {
-      const me = requireUser(db, token, ['admin', 'creator']);
-      const ids = d.enroll_ids || [];
-      const before = db.enrollments.length;
-      db.enrollments = db.enrollments.filter(e => {
-        const p = db.projects.find(x => x.project_id === e.project_id);
-        return !(ids.includes(e.enroll_id) && p && canManage(me, p));
-      });
-      log(db, me.user_id, 'enroll_remove', (before - db.enrollments.length) + ' รายการ');
-      return { removed: before - db.enrollments.length };
-    },
-    'dash.creator'(db, d, token) {
-      const me = requireUser(db, token, ['admin', 'creator']);
-      let fyId = d.fy_id;
-      if (!fyId) { const a = db.fiscalYears.find(f => f.is_active === 'TRUE'); fyId = a ? a.fy_id : ''; }
-      const list = db.projects.filter(p => p.owner_id === me.user_id && (!fyId || p.fy_id === fyId)).map(p => view(db, p, me));
-      const sum = k => list.reduce((s, p) => s + (p[k] || 0), 0);
-      return { fy_id: fyId, projects: list,
-        totals: { projects: list.length, published: list.filter(p => p.status === 'published').length, participants: sum('approved'), pending: sum('pending') } };
-    },
-
-    'settings.get'(db) { const o = {}; SETTING_KEYS.forEach(k => { o[k] = db.settings[k] || ''; }); return o; },
-    'settings.save'(db, d, token) {
-      const a = requireUser(db, token, ['admin']);
-      if (d.frontend_url) {
-        d.frontend_url = String(d.frontend_url).trim().replace(/\/+$/, '');
-        if (!/^https?:\/\//.test(d.frontend_url)) fail('URL หน้าเว็บต้องขึ้นต้นด้วย http:// หรือ https://');
-      }
-      if (d.theme_color && !/^#[0-9a-fA-F]{6}$/.test(d.theme_color)) fail('รหัสสีไม่ถูกต้อง');
-      SETTING_KEYS.forEach(k => { if (d[k] !== undefined) db.settings[k] = clean(d[k], 500); });
-      log(db, a.user_id, 'settings_save');
-      return routes['settings.get'](db);
-    },
-    'settings.testMail'(db, d, token) {
-      const a = requireUser(db, token, ['admin']);
-      return { to: a.email, quota: 100, demo: true };
-    },
-
-    'dash.admin'(db, d, token) {
-      requireUser(db, token, ['admin']);
-      const U = db.users;
-      const c = f => U.filter(f).length;
-      const active = db.fiscalYears.find(f => f.is_active === 'TRUE');
-      const monthly = [];
-      const base = new Date(); base.setDate(1);
-      for (let i = 11; i >= 0; i--) {
-        const m = new Date(base.getFullYear(), base.getMonth() - i, 1);
-        monthly.push({ key: m.getFullYear() + '-' + String(m.getMonth() + 1).padStart(2, '0'),
-          label: MONTHS[m.getMonth()] + ' ' + String(m.getFullYear() + 543).slice(-2), count: 0 });
-      }
-      U.forEach(u => {
-        const dt = new Date(u.created_at);
-        const key = dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0');
-        const o = monthly.find(x => x.key === key);
-        if (o) o.count++;
-      });
-      const fyP = active ? db.projects.filter(p => p.fy_id === active.fy_id) : db.projects;
-      return {
-        projects_list: fyP.map(p => view(db, p, null)).sort((a, b) => b.enrolled - a.enrolled).slice(0, 8),
-        users: {
-          total: U.length, active: c(u => u.status === 'active'), pending: c(u => u.status === 'pending'),
-          suspended: c(u => u.status === 'suspended'), admin: c(u => u.role === 'admin'),
-          creator: c(u => u.role === 'creator'), user: c(u => u.role === 'user')
-        },
-        fiscal_years: db.fiscalYears.length,
-        active_fy: active ? active.year : null,
-        projects: fyP.length,
-        enrollments: db.enrollments.length,
-        monthly,
-        recent: U.slice().sort((a, b) => (a.created_at < b.created_at ? 1 : -1)).slice(0, 6).map(pub),
-        mail_quota: 100
-      };
-    },
-    'logs.list'(db, d, token) {
-      requireUser(db, token, ['admin']);
-      const map = {};
-      db.users.forEach(u => { map[u.user_id] = u; });
-      return db.logs.slice(-300).reverse().map(l => {
-        const u = map[l.user_id];
-        return { ...l, user_name: u ? u.first_name + ' ' + u.last_name : '', user_email: u ? u.email : '' };
-      });
-    }
+  const spreadsheet = {
+    getSheetByName: n => (store.sheets[n] ? makeSheet(n) : null),
+    insertSheet: n => { store.sheets[n] = []; return makeSheet(n); },
+    getSheets: () => Object.keys(store.sheets).map(makeSheet),
+    deleteSheet: sh => { delete store.sheets[sh.getName()]; }
   };
 
-  async function handle(action, data, token) {
-    await new Promise(r => setTimeout(r, 220));
-    const fn = routes[action];
-    if (!fn) return { ok: false, error: 'ไม่พบคำสั่ง: ' + action };
-    const db = load();
-    try {
-      const result = fn(db, JSON.parse(JSON.stringify(data || {})), token);
-      save(db);
-      return { ok: true, data: JSON.parse(JSON.stringify(result ?? null)) };
-    } catch (e) {
-      return { ok: false, error: e.message || String(e), code: e.code || '' };
+  /* ---------- บริการอื่น ๆ ของ Apps Script ---------- */
+  const SpreadsheetApp = {
+    getActiveSpreadsheet: () => spreadsheet, openById: () => spreadsheet,
+    getUi() { throw new Error('ไม่มี UI ในโหมดทดลอง'); }
+  };
+  const Utilities = {
+    DigestAlgorithm: { SHA_256: 'SHA_256' }, Charset: { UTF_8: 'UTF_8' },
+    getUuid: uid,
+    computeDigest: (alg, str) => SHA(String(str)),
+    formatDate(date, tz, fmt) {
+      const d = new Date(date.getTime() + 7 * 3600e3);
+      const p = n => String(n).padStart(2, '0');
+      const m = { yyyy: d.getUTCFullYear(), MM: p(d.getUTCMonth() + 1), dd: p(d.getUTCDate()), HH: p(d.getUTCHours()), mm: p(d.getUTCMinutes()), ss: p(d.getUTCSeconds()) };
+      return fmt.replace(/'([^']*)'|yyyy|MM|dd|HH|mm|ss/g, (x, q) => (q !== undefined ? q : m[x]));
+    },
+    base64Decode: s => Array.from(atob(s), ch => ch.charCodeAt(0)),
+    newBlob: (bytes, mime, name) => ({ bytes, mime, name })
+  };
+  const mkFile = blob => {
+    const id = 'demo-file-' + uid();
+    let url = '#';
+    try { url = URL.createObjectURL(new Blob([new Uint8Array(blob.bytes)], { type: blob.mime })); } catch (e) { }
+    return { getId: () => id, getUrl: () => url, getName: () => blob.name, setSharing() { }, setTrashed() { } };
+  };
+  const mkFolder = (name, id) => {
+    const fid = id || 'demo-folder-' + uid();
+    return { getId: () => fid, getName: () => name, createFolder: n => mkFolder(n), createFile: b => mkFile(b) };
+  };
+  const DriveApp = {
+    createFolder: n => mkFolder(n), getFolderById: id => mkFolder('folder', id), getFileById: () => ({ setTrashed() { } }),
+    Access: { ANYONE_WITH_LINK: 'ANYONE_WITH_LINK' }, Permission: { VIEW: 'VIEW' }
+  };
+  const MailApp = { getRemainingDailyQuota: () => 100, sendEmail: o => { mails.push(o); } };
+  const services = [
+    SpreadsheetApp,
+    { getScriptProperties: () => ({ getProperty: () => null }) },
+    Utilities,
+    { getScriptLock: () => ({ waitLock() { }, hasLock: () => true, releaseLock() { } }) },
+    { MimeType: { JSON: 'json' }, createTextOutput: s => ({ setMimeType() { return this; }, getContent: () => s }) },
+    MailApp, DriveApp,
+    { getEffectiveUser: () => ({ getEmail: () => 'admin@demo.local' }) },
+    { log: () => { } }
+  ];
+
+  /* ---------- ข้อมูลตัวอย่าง ---------- */
+  function seed() {
+    G.setupSystem();
+    const now = () => new Date().toISOString();
+    const ago = d => new Date(Date.now() - d * 864e5).toISOString();
+    const day = n => { const d = new Date(Date.now() + n * 864e5); return d.toISOString().slice(0, 10); };
+    const base = new URL(root() || './', location.href).href.replace(/\/$/, '');
+
+    // ตั้งค่าระบบ
+    const set = (k, v) => { const r = G.readAll_('Settings').find(x => x.key === k); r ? G.update_('Settings', r, { value: v }) : G.insert_('Settings', { key: k, value: v }); };
+    set('site_name', 'ระบบฝึกอบรมออนไลน์');
+    set('org_name', 'หน่วยงานตัวอย่าง (โหมดทดลอง)');
+    set('frontend_url', base);
+
+    // ผู้ใช้
+    const users = [];
+    const addUser = (email, pw, role, prefix, first, last, position, org, status, days) => {
+      const salt = G.token_();
+      const u = {
+        user_id: G.uuid_(), email, password_hash: G.hash_(pw, salt), salt, prefix, first_name: first, last_name: last,
+        position, organization: org, phone: '0812345678', role, status, verify_token: '', verify_expires: '', verify_sent_at: '',
+        reset_token: '', reset_expires: '', created_at: ago(days), last_login: ''
+      };
+      G.insert_('Users', u);
+      users.push(u);
+      return u;
+    };
+    const admin = G.readAll_('Users').find(u => u.role === 'admin');
+    const asalt = G.token_();
+    G.update_('Users', admin, { password_hash: G.hash_('admin1234', asalt), salt: asalt, prefix: 'นาย', created_at: ago(300) });
+    const creator = addUser('creator@demo.local', 'creator1234', 'creator', 'นางสาว', 'สมหญิง', 'ใจดี', 'ศึกษานิเทศก์', 'สำนักงานเขตพื้นที่การศึกษาตัวอย่าง', 'active', 200);
+    const user = addUser('user@demo.local', 'user1234', 'user', 'นาย', 'สมชาย', 'รักเรียน', 'ครู', 'โรงเรียนบ้านตัวอย่าง', 'active', 45);
+    const teachers = [['นาง', 'มาลี', 'สุขใจ'], ['นาย', 'วิชัย', 'เก่งงาน'], ['นางสาว', 'ปวีณา', 'ศรีสุข'], ['นาย', 'ธนพล', 'มั่นคง'],
+      ['นาง', 'กมลา', 'แสงทอง'], ['นาย', 'อนุชา', 'ทองดี'], ['นางสาว', 'ศิริพร', 'วงศ์ใหญ่']]
+      .map((n, i) => addUser(`teacher${i + 1}@demo.local`, 'demo1234', 'user', n[0], n[1], n[2], 'ครู', 'โรงเรียนตัวอย่าง ' + (i + 1), i === 6 ? 'pending' : 'active', 5 + i * 40));
+
+    // ปีงบประมาณ
+    const fyCur = G.readAll_('FiscalYears')[0];
+    const y = Number(fyCur.year);
+    const fyPrev = { fy_id: G.uuid_(), year: String(y - 1), start_date: (y - 545) + '-10-01', end_date: (y - 544) + '-09-30', is_active: 'FALSE' };
+    G.insert_('FiscalYears', fyPrev);
+
+    // โครงการ
+    const mkP = o => {
+      const p = Object.assign({
+        project_id: G.uuid_(), code: '', description: '', objectives: '', cover_url: '', owner_id: creator.user_id,
+        start_date: '', end_date: '', reg_open: '', reg_close: '', capacity: '', enroll_mode: 'auto', pass_criteria: '80',
+        status: 'published', hours: '', format: 'online', location: '', drive_folder_id: '', created_at: now(), updated_at: now()
+      }, o);
+      G.insert_('Projects', p);
+      return p;
+    };
+    const p1 = mkP({ fy_id: fyCur.fy_id, code: `P${y}-001`, title: 'พัฒนาครูสู่การจัดการเรียนรู้เชิงรุก (Active Learning)',
+      description: 'โครงการพัฒนาครูให้มีความรู้และทักษะการออกแบบการจัดการเรียนรู้เชิงรุก\nเรียนรู้ผ่านกิจกรรมออนไลน์ ทำแบบทดสอบก่อน-หลัง และส่งแผนการจัดการเรียนรู้',
+      objectives: '1. เพื่อให้ครูเข้าใจหลักการจัดการเรียนรู้เชิงรุก\n2. เพื่อให้ครูออกแบบแผนการจัดการเรียนรู้ได้\n3. เพื่อแลกเปลี่ยนเรียนรู้ผ่านชุมชนการเรียนรู้ทางวิชาชีพ',
+      start_date: day(-3), end_date: day(40), reg_open: day(-10), reg_close: day(9), capacity: '50', hours: '12' });
+    const p2 = mkP({ fy_id: fyCur.fy_id, code: `P${y}-002`, title: 'การใช้ AI และเทคโนโลยีดิจิทัลเพื่อการศึกษา',
+      description: 'อบรมเชิงปฏิบัติการการใช้เครื่องมือ AI ช่วยสร้างสื่อและออกแบบการสอน', objectives: 'ครูสามารถใช้เครื่องมือดิจิทัลสร้างสื่อการสอนได้',
+      start_date: day(20), end_date: day(22), reg_open: day(-2), reg_close: day(15), capacity: '30', hours: '18',
+      format: 'hybrid', location: 'ห้องประชุมสำนักงานเขตพื้นที่การศึกษา', enroll_mode: 'approval' });
+    mkP({ fy_id: fyCur.fy_id, code: `P${y}-003`, title: 'การวัดและประเมินผลตามสภาพจริง', description: 'อยู่ระหว่างจัดเตรียมเนื้อหา', status: 'draft', hours: '6' });
+    const p4 = mkP({ fy_id: fyPrev.fy_id, code: `P${y - 1}-001`, title: 'การนิเทศภายในโรงเรียนแบบกัลยาณมิตร', description: 'โครงการปีงบประมาณที่ผ่านมา',
+      status: 'closed', hours: '9', start_date: day(-200), end_date: day(-190) });
+
+    const enroll = (p, u, status, d) => G.insert_('Enrollments', { enroll_id: G.uuid_(), project_id: p.project_id, user_id: u.user_id, status, enrolled_at: ago(d), completed_at: status === 'completed' ? ago(d - 5) : '' });
+    enroll(p1, user, 'approved', 3);
+    [0, 1, 2].forEach(i => enroll(p1, teachers[i], 'approved', 2 + i));
+    enroll(p2, teachers[0], 'pending', 1);
+    enroll(p2, teachers[3], 'pending', 1);
+    enroll(p2, teachers[4], 'approved', 2);
+    enroll(p4, user, 'completed', 210);
+    enroll(p4, teachers[2], 'completed', 210);
+
+    // กิจกรรมของโครงการที่ 1
+    const mkA = (o, settings) => {
+      const a = Object.assign({ activity_id: G.uuid_(), project_id: p1.project_id, description: '', content_url: '', open_at: '', close_at: '',
+        is_required: 'TRUE', status: 'published', created_at: now(), updated_at: now() }, o);
+      a.settings_json = JSON.stringify(settings || {});
+      G.insert_('Activities', a);
+      return a;
+    };
+    const pre = mkA({ order_no: '1', type: 'quiz', title: 'แบบทดสอบก่อนเรียน', description: 'วัดความรู้พื้นฐานก่อนเริ่มเรียน ไม่มีผลต่อการผ่านโครงการ', is_required: 'FALSE' },
+      { time_limit_min: 10, max_attempts: 1, pass_score_pct: 0, show_answer: 'score_only', quiz_kind: 'pre' });
+    mkA({ order_no: '2', type: 'content', title: 'บทเรียน: หลักการจัดการเรียนรู้เชิงรุก', description: 'ชมวิดีโอและศึกษาเอกสารประกอบ แล้วกด "เรียนแล้ว"', content_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' });
+    const post = mkA({ order_no: '3', type: 'quiz', title: 'แบบทดสอบหลังเรียน', description: 'ต้องได้คะแนนอย่างน้อย 60% จึงผ่าน ทำได้ 3 ครั้ง' },
+      { time_limit_min: 15, max_attempts: 3, pass_score_pct: 60, show_answer: 'after_submit', quiz_kind: 'post', shuffle_options: true });
+    mkA({ order_no: '4', type: 'assignment', title: 'ส่งแผนการจัดการเรียนรู้', description: 'ออกแบบแผนการจัดการเรียนรู้เชิงรุก 1 แผน แนบไฟล์ PDF หรือ Word หรือแนบลิงก์ Google Drive' },
+      { submit_types: ['file', 'link'], allowed_ext: 'pdf,doc,docx', max_size_mb: 5, max_score: 20, allow_resubmit: true });
+
+    const q = (a, n, type, text, options, answer, score, exp) => G.insert_('Questions', {
+      question_id: G.uuid_(), activity_id: a.activity_id, order_no: String(n), type, question_text: text, image_url: '',
+      options_json: JSON.stringify(options), answer_json: JSON.stringify(answer), score: String(score || 1), explanation: exp || '' });
+    [pre, post].forEach(a => {
+      q(a, 1, 'single', 'ข้อใดเป็นลักษณะสำคัญของการจัดการเรียนรู้เชิงรุก', ['ครูบรรยายเป็นหลัก', 'ผู้เรียนลงมือปฏิบัติและคิดวิเคราะห์', 'ผู้เรียนจดบันทึกตามครู', 'เน้นการท่องจำ'], [1], 1, 'Active Learning เน้นให้ผู้เรียนลงมือทำและสะท้อนคิด');
+      q(a, 2, 'truefalse', 'การทำงานกลุ่มเป็นเทคนิคหนึ่งของการจัดการเรียนรู้เชิงรุก', ['ถูก', 'ผิด'], [0], 1);
+      q(a, 3, 'multiple', 'ข้อใดเป็นเทคนิคการจัดการเรียนรู้เชิงรุก (เลือกได้มากกว่า 1 ข้อ)', ['Think-Pair-Share', 'การบรรยายต่อเนื่อง 2 ชั่วโมง', 'Jigsaw', 'Problem-based Learning'], [0, 2, 3], 2);
+    });
+    q(post, 4, 'short', 'คำย่อภาษาอังกฤษของ "ชุมชนการเรียนรู้ทางวิชาชีพ" คือ', [], ['PLC'], 1);
+    q(post, 5, 'essay', 'อธิบายแนวทางนำการจัดการเรียนรู้เชิงรุกไปใช้ในชั้นเรียนของท่าน', [], [], 5);
+
+    // ผลงานตัวอย่างของครูท่านอื่น
+    const qs = G.readAll_('Questions').filter(x => x.activity_id === post.activity_id);
+    const ans = {};
+    qs.forEach(x => { ans[x.question_id] = x.type === 'single' ? 1 : x.type === 'truefalse' ? 0 : x.type === 'multiple' ? [0, 2, 3] : x.type === 'short' ? 'plc' : 'ใช้ Think-Pair-Share ในคาบคณิตศาสตร์'; });
+    G.insert_('QuizAttempts', { attempt_id: G.uuid_(), activity_id: post.activity_id, user_id: teachers[0].user_id, attempt_no: '1',
+      answers_json: JSON.stringify({ order: qs.map(x => x.question_id), answers: ans, essay: {} }),
+      score: '5', max_score: '10', percent: '50', passed: 'FALSE', started_at: ago(1), submitted_at: ago(1), graded_status: 'waiting' });
+    const asg = G.readAll_('Activities').find(x => x.type === 'assignment');
+    G.insert_('Submissions', { submission_id: G.uuid_(), activity_id: asg.activity_id, user_id: teachers[1].user_id, file_id: '', file_url: '', file_name: '',
+      link_url: 'https://drive.google.com/file/d/example', text_answer: '', submitted_at: ago(1), score: '', feedback: '', grader_id: '', graded_at: '', status: 'submitted' });
+  }
+
+  function loadStore() { try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { return null; } }
+  function saveStore() { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { console.warn('บันทึกข้อมูลโหมดทดลองไม่ได้', e); } }
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = () => reject(new Error('โหลดโหมดทดลองไม่สำเร็จ (ไม่พบ ' + src + ')'));
+      document.head.appendChild(s);
+    });
+  }
+
+  async function init() {
+    if (!G) {
+      if (!window.GAS_FACTORY) await loadScript(root() + 'assets/js/gas-bundle.js');
+      G = window.GAS_FACTORY.apply(null, services);
+    }
+    store = loadStore();
+    if (!store) {
+      store = { sheets: {} };
+      seed();
+      saveStore();
     }
   }
 
-  function reset() { localStorage.removeItem(KEY); }
+  async function handle(action, data, token) {
+    try { await init(); } catch (e) { return { ok: false, error: e.message }; }
+    mails = [];
+    await new Promise(r => setTimeout(r, 120));
+    let out;
+    try {
+      const res = G.doPost({ postData: { contents: JSON.stringify({ action, token, data }) } });
+      out = JSON.parse(res.getContent());
+    } catch (e) {
+      out = { ok: false, error: String(e.message || e) };
+    }
+    saveStore();
+    if (out.ok && out.data && typeof out.data === 'object' && !Array.isArray(out.data)) {
+      out.data.demo = true;
+      const m = mails.map(x => /href="([^"]*(?:verify|reset-password)\.html\?token=[^"]+)"/.exec(x.htmlBody || '')).find(Boolean);
+      if (m) out.data.demo_link = m[1].replace(/&amp;/g, '&');
+    }
+    return out;
+  }
+
+  function reset() { localStorage.removeItem(KEY); store = null; }
 
   return { handle, reset };
 })();

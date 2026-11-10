@@ -111,5 +111,42 @@ const PUI = (() => {
     setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
   }
 
-  return { FORMAT, ENROLL, STATUS, today, state, stateBadge, statusBadge, enrollBadge, formatLabel, formatIcon, cover, dateRange, seatBar, card, fillFySelect, csvDownload };
+  /* ---------- กิจกรรม ---------- */
+  const ACT = {
+    content:    { label: 'เนื้อหา / บทเรียน', icon: 'play-circle', soft: 'soft-info' },
+    quiz:       { label: 'แบบทดสอบ',         icon: 'ui-checks',   soft: 'soft-purple' },
+    assignment: { label: 'ส่งงาน',            icon: 'cloud-arrow-up', soft: 'soft-pink' }
+  };
+  const MY = {
+    todo:       { label: 'ยังไม่ได้ทำ', cls: 'secondary', icon: 'circle' },
+    inprogress: { label: 'กำลังทำ',    cls: 'info',      icon: 'pencil' },
+    done:       { label: 'เสร็จแล้ว',   cls: 'success',   icon: 'check-circle-fill' },
+    submitted:  { label: 'ส่งแล้ว',     cls: 'success',   icon: 'send-check' },
+    review:     { label: 'รอตรวจ',     cls: 'warning',   icon: 'hourglass-split' },
+    failed:     { label: 'ยังไม่ผ่าน',  cls: 'danger',    icon: 'x-circle' },
+    revise:     { label: 'ให้แก้ไข',    cls: 'warning',   icon: 'arrow-repeat' }
+  };
+  const QUIZ_KIND = { general: 'แบบทดสอบทั่วไป', pre: 'แบบทดสอบก่อนเรียน (Pre-test)', post: 'แบบทดสอบหลังเรียน (Post-test)' };
+  const actIcon = (type, size = '') => { const t = ACT[type] || ACT.content; return `<span class="act-icon ${t.soft} ${size}"><i class="bi bi-${t.icon}"></i></span>`; };
+  const myBadge = s => s ? badge(MY[s] || MY.todo) : '';
+  function fmtDT(s) {
+    if (!s) return '';
+    const d = new Date(s);
+    return isNaN(d) ? s : d.toLocaleString('th-TH', { day: 'numeric', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+  }
+  function actWindow(a) {
+    if (!a.open_at && !a.close_at) return 'ทำได้ตลอด';
+    if (a.open_at && a.close_at) return `${fmtDT(a.open_at)} – ${fmtDT(a.close_at)}`;
+    return a.open_at ? `เปิด ${fmtDT(a.open_at)}` : `ปิด ${fmtDT(a.close_at)}`;
+  }
+  function youtubeId(url) {
+    const m = /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/.exec(url || '');
+    return m ? m[1] : '';
+  }
+  function progressBar(pct, h = 8) {
+    return `<div class="progress seat-bar" style="height:${h}px" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar" style="width:${pct}%"></div></div>`;
+  }
+
+  return { ACT, MY, QUIZ_KIND, actIcon, myBadge, fmtDT, actWindow, youtubeId, progressBar,
+    FORMAT, ENROLL, STATUS, today, state, stateBadge, statusBadge, enrollBadge, formatLabel, formatIcon, cover, dateRange, seatBar, card, fillFySelect, csvDownload };
 })();
