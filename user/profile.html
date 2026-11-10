@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ข้อมูลส่วนตัว</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="../assets/css/style.css" rel="stylesheet">
+  <script src="../assets/js/theme.js"></script>
+</head>
+<body data-root="../">
+  <div class="app">
+    <aside class="sidebar offcanvas-lg offcanvas-start" tabindex="-1" id="sidebar"></aside>
+    <div class="app-main">
+      <header class="topbar" id="topbar"></header>
+      <main class="app-content">
+        <div class="page-head">
+          <div>
+            <h1>ข้อมูลส่วนตัว</h1>
+            <p>แก้ไขข้อมูลและเปลี่ยนรหัสผ่านของคุณ</p>
+          </div>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-lg-4">
+            <div class="card text-center">
+              <div class="card-body py-4">
+                <span class="avatar lg mb-3" id="pAvatar"></span>
+                <h5 class="mb-1" id="pName"></h5>
+                <div class="text-muted small mb-3 text-break" id="pEmail"></div>
+                <div id="pRole"></div>
+                <div class="border-top mt-4 pt-3 small text-muted text-start vstack gap-2">
+                  <div class="d-flex justify-content-between"><span>สมัครเมื่อ</span><span id="pCreated"></span></div>
+                  <div class="d-flex justify-content-between"><span>เข้าใช้ล่าสุด</span><span id="pLogin"></span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-8">
+            <form class="card mb-3" id="profileForm" novalidate>
+              <div class="card-header"><i class="bi bi-person-vcard me-2 text-primary"></i>ข้อมูลทั่วไป</div>
+              <div class="card-body">
+                <div class="row g-3">
+                  <div class="col-sm-3">
+                    <label class="form-label" for="prefix">คำนำหน้า</label>
+                    <select class="form-select" id="prefix" name="prefix">
+                      <option value="">ไม่ระบุ</option><option>นาย</option><option>นาง</option><option>นางสาว</option><option>ดร.</option><option>ว่าที่ร้อยตรี</option>
+                    </select>
+                  </div>
+                  <div class="col-sm-4 col-6">
+                    <label class="form-label" for="first_name">ชื่อ</label>
+                    <input class="form-control" id="first_name" name="first_name" required>
+                  </div>
+                  <div class="col-sm-5 col-6">
+                    <label class="form-label" for="last_name">นามสกุล</label>
+                    <input class="form-control" id="last_name" name="last_name" required>
+                  </div>
+                  <div class="col-sm-6">
+                    <label class="form-label" for="position">ตำแหน่ง</label>
+                    <input class="form-control" id="position" name="position">
+                  </div>
+                  <div class="col-sm-6">
+                    <label class="form-label" for="phone">เบอร์โทรศัพท์</label>
+                    <input class="form-control" id="phone" name="phone" inputmode="tel">
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label" for="organization">หน่วยงาน / โรงเรียน</label>
+                    <input class="form-control" id="organization" name="organization">
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label" for="emailRo">อีเมล</label>
+                    <input class="form-control" id="emailRo" disabled>
+                    <div class="form-text">อีเมลใช้เป็นชื่อผู้ใช้ ไม่สามารถเปลี่ยนได้</div>
+                  </div>
+                </div>
+              </div>
+              <div class="card-footer bg-transparent text-end p-3">
+                <button class="btn btn-primary" type="submit" id="saveBtn"><i class="bi bi-check2 me-1"></i>บันทึกข้อมูล</button>
+              </div>
+            </form>
+
+            <form class="card" id="pwForm" novalidate>
+              <div class="card-header"><i class="bi bi-shield-lock me-2 text-primary"></i>เปลี่ยนรหัสผ่าน</div>
+              <div class="card-body">
+                <div class="row g-3">
+                  <div class="col-12">
+                    <label class="form-label" for="old_password">รหัสผ่านเดิม</label>
+                    <div class="input-group">
+                      <input type="password" class="form-control" id="old_password" name="old_password" autocomplete="current-password" required>
+                      <button class="btn btn-pw" type="button" data-toggle-password="old_password" aria-label="แสดงรหัสผ่าน"><i class="bi bi-eye"></i></button>
+                    </div>
+                  </div>
+                  <div class="col-sm-6">
+                    <label class="form-label" for="new_password">รหัสผ่านใหม่</label>
+                    <div class="input-group">
+                      <input type="password" class="form-control" id="new_password" name="new_password" minlength="8" autocomplete="new-password" required>
+                      <button class="btn btn-pw" type="button" data-toggle-password="new_password" aria-label="แสดงรหัสผ่าน"><i class="bi bi-eye"></i></button>
+                    </div>
+                    <div class="pw-meter" id="pwMeter"><span></span><span></span><span></span><span></span></div>
+                    <div class="form-text" id="pwText">อย่างน้อย 8 ตัวอักษร ผสมตัวพิมพ์ใหญ่ เล็ก และตัวเลข</div>
+                  </div>
+                  <div class="col-sm-6">
+                    <label class="form-label" for="new_password2">ยืนยันรหัสผ่านใหม่</label>
+                    <div class="input-group has-validation">
+                      <input type="password" class="form-control" id="new_password2" name="new_password2" autocomplete="new-password" required>
+                      <button class="btn btn-pw" type="button" data-toggle-password="new_password2" aria-label="แสดงรหัสผ่าน"><i class="bi bi-eye"></i></button>
+                      <div class="invalid-feedback">รหัสผ่านไม่ตรงกัน</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="card-footer bg-transparent text-end p-3">
+                <button class="btn btn-outline-primary" type="submit" id="pwBtn"><i class="bi bi-key me-1"></i>เปลี่ยนรหัสผ่าน</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/mock.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/layout.js"></script>
+  <script>
+    const me = Auth.require();
+    const pf = UI.$('#profileForm');
+    const pw = UI.$('#pwForm');
+
+    function show(u) {
+      UI.$('#pAvatar').textContent = UI.initials(u);
+      UI.$('#pName').textContent = UI.fullName(u);
+      UI.$('#pEmail').textContent = u.email;
+      UI.$('#pRole').innerHTML = UI.roleBadge(u.role);
+      UI.$('#pCreated').textContent = UI.thaiDate(u.created_at);
+      UI.$('#pLogin').textContent = UI.thaiDate(u.last_login, true);
+      UI.$('#emailRo').value = u.email;
+      UI.fillForm(pf, u);
+    }
+
+    if (me) {
+      Layout.init(me, { active: 'profile', title: 'ข้อมูลส่วนตัว' });
+      show(me);
+      API.call('me').then(u => { Auth.setUser(u); show(u); }).catch(() => { });
+      UI.bindPasswordMeter(pw.new_password, UI.$('#pwMeter'), UI.$('#pwText'));
+    }
+
+    pf.addEventListener('submit', async e => {
+      e.preventDefault();
+      if (!pf.checkValidity()) { pf.classList.add('was-validated'); return; }
+      const btn = UI.$('#saveBtn');
+      UI.btnLoading(btn, true, 'กำลังบันทึก...');
+      try {
+        const u = await API.call('updateProfile', UI.formData(pf));
+        Auth.setUser(u);
+        show(u);
+        Layout.init(u, { active: 'profile', title: 'ข้อมูลส่วนตัว' });
+        UI.toast('บันทึกข้อมูลแล้ว');
+      } catch (err) { UI.error(err); }
+      UI.btnLoading(btn, false);
+    });
+
+    const checkMatch = () => pw.new_password2.setCustomValidity(pw.new_password2.value && pw.new_password2.value !== pw.new_password.value ? 'x' : '');
+    pw.new_password.addEventListener('input', checkMatch);
+    pw.new_password2.addEventListener('input', checkMatch);
+
+    pw.addEventListener('submit', async e => {
+      e.preventDefault();
+      checkMatch();
+      if (!pw.checkValidity()) { pw.classList.add('was-validated'); return; }
+      const btn = UI.$('#pwBtn');
+      UI.btnLoading(btn, true, 'กำลังบันทึก...');
+      try {
+        await API.call('changePassword', { old_password: pw.old_password.value, new_password: pw.new_password.value });
+        pw.reset();
+        pw.classList.remove('was-validated');
+        pw.new_password.dispatchEvent(new Event('input'));
+        UI.success('เปลี่ยนรหัสผ่านแล้ว', 'อุปกรณ์อื่นที่เคยเข้าสู่ระบบไว้จะถูกออกจากระบบ');
+      } catch (err) { UI.error(err); }
+      UI.btnLoading(btn, false);
+    });
+  </script>
+</body>
+</html>
