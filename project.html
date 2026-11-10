@@ -54,15 +54,13 @@
             <div class="card-header"><i class="bi bi-bullseye me-2 text-primary"></i>วัตถุประสงค์</div>
             <div class="card-body prose" id="obj"></div>
           </div>
-          <div class="card">
-            <div class="card-header"><i class="bi bi-list-check me-2 text-primary"></i>กิจกรรมในโครงการ</div>
-            <div class="card-body">
-              <div class="empty-state py-4">
-                <div class="icon soft-primary"><i class="bi bi-calendar2-week"></i></div>
-                <h6>ยังไม่มีกิจกรรม</h6>
-                <p class="small mb-0">แบบทดสอบ แบบส่งงาน และเนื้อหาการเรียนรู้จะแสดงที่นี่ เมื่อผู้รับผิดชอบเพิ่มกิจกรรม</p>
-              </div>
+          <div class="card" id="actCard">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span><i class="bi bi-list-check me-2 text-primary"></i>กิจกรรมในโครงการ</span>
+              <a class="small text-decoration-none d-none" id="manageActs"><i class="bi bi-gear me-1"></i>จัดการกิจกรรม</a>
             </div>
+            <div class="card-body pb-2" id="actProgress"></div>
+            <div class="card-body pt-0 timeline-act" id="actList"><div class="skeleton" style="height:120px"></div></div>
           </div>
         </div>
 
@@ -79,6 +77,17 @@
       </div>
     </div>
   </main>
+
+  <!-- Modal เนื้อหา -->
+  <div class="modal fade" id="contentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title" id="cTitle"></h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button></div>
+        <div class="modal-body" id="cBody"></div>
+        <div class="modal-footer" id="cFoot"></div>
+      </div>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
@@ -148,9 +157,78 @@
         infoRow('person-badge', 'soft-primary', 'ผู้รับผิดชอบ', UI.esc(p.owner_name || '-'));
 
       renderAction();
+      loadActivities();
       UI.$('#loading').classList.add('d-none');
       UI.$('#content').classList.remove('d-none');
     }
+
+    /* ---------- กิจกรรม ---------- */
+    let acts = [];
+    async function loadActivities() {
+      try {
+        const r = await API.call('activity.list', { project_id: p.project_id });
+        acts = r.activities.filter(a => a.status === 'published');
+        if (r.can_manage) { UI.$('#manageActs').classList.remove('d-none'); UI.$('#manageActs').href = 'creator/activities.html?project_id=' + p.project_id; }
+        const pg = r.progress;
+        UI.$('#actProgress').innerHTML = pg && pg.total ? `
+          <div class="d-flex justify-content-between small mb-1"><span>ความก้าวหน้า: ทำกิจกรรมบังคับแล้ว <b>${pg.done}/${pg.total}</b></span><span><b>${pg.percent}%</b> (เกณฑ์ผ่าน ${pg.pass_criteria}%)</span></div>
+          ${PUI.progressBar(pg.percent, 10)}
+          ${r.enroll_status === 'completed' ? '<div class="alert alert-success small mt-3 mb-0"><i class="bi bi-award-fill me-1"></i>ยินดีด้วย! คุณผ่านการอบรมโครงการนี้แล้ว</div>' : ''}`
+          : (!r.is_participant && !r.can_manage && acts.length ? '<div class="alert alert-light border small mb-0"><i class="bi bi-lock me-1"></i>ลงทะเบียนและได้รับอนุมัติก่อน จึงจะทำกิจกรรมได้</div>' : '');
+        renderActs(r);
+      } catch (err) { UI.$('#actList').innerHTML = `<div class="text-muted small">${UI.esc(err.message)}</div>`; }
+    }
+
+    function renderActs(r) {
+      if (!acts.length) {
+        UI.$('#actList').innerHTML = `<div class="empty-state py-4"><div class="icon soft-primary"><i class="bi bi-calendar2-week"></i></div>
+          <h6>ยังไม่มีกิจกรรม</h6><p class="small mb-0">แบบทดสอบ แบบส่งงาน และเนื้อหาการเรียนรู้จะแสดงที่นี่</p></div>`;
+        return;
+      }
+      UI.$('#actList').innerHTML = acts.map((a, i) => {
+        let action = '';
+        if (r.is_participant) {
+          const my = a.my || { state: 'todo' };
+          if (a.window === 'notyet') action = `<span class="small text-muted text-nowrap"><i class="bi bi-lock me-1"></i>เปิด ${PUI.fmtDT(a.open_at)}</span>`;
+          else if (a.type === 'content') action = `<button class="btn btn-sm ${my.state === 'done' ? 'btn-soft' : 'btn-primary'}" data-content="${a.activity_id}"><i class="bi bi-play-fill me-1"></i>${my.state === 'done' ? 'ดูอีกครั้ง' : 'เรียน'}</button>`;
+          else if (a.type === 'quiz') action = `<a class="btn btn-sm ${my.state === 'done' ? 'btn-soft' : 'btn-primary'}" href="user/quiz.html?id=${a.activity_id}"><i class="bi bi-${my.state === 'done' ? 'eye' : 'pencil-square'} me-1"></i>${my.state === 'todo' ? 'ทำแบบทดสอบ' : my.state === 'inprogress' ? 'ทำต่อ' : 'ดูผล'}</a>`;
+          else action = `<a class="btn btn-sm ${['submitted', 'done'].includes(my.state) ? 'btn-soft' : 'btn-primary'}" href="user/assignment.html?id=${a.activity_id}"><i class="bi bi-cloud-arrow-up me-1"></i>${my.state === 'todo' ? 'ส่งงาน' : my.state === 'revise' ? 'แก้ไขงาน' : 'ดูงานที่ส่ง'}</a>`;
+        }
+        const extra = a.type === 'quiz' ? `${a.question_count} ข้อ${a.settings.time_limit_min ? ' · ' + a.settings.time_limit_min + ' นาที' : ''}` : a.type === 'assignment' ? `คะแนนเต็ม ${a.settings.max_score}` : '';
+        const score = a.my && a.my.best_percent !== undefined ? ` · คะแนนสูงสุด ${a.my.best_percent}%` : a.my && a.my.score ? ` · ได้ ${UI.esc(a.my.score)} คะแนน` : '';
+        return `<div class="act-item">
+          ${PUI.actIcon(a.type, 'sm')}
+          <div class="flex-grow-1 min-w-0">
+            <div class="fw-semibold">${i + 1}. ${UI.esc(a.title)} ${a.is_required ? '' : '<span class="badge-soft secondary ms-1">ไม่บังคับ</span>'}</div>
+            <div class="small text-muted">${PUI.ACT[a.type].label}${extra ? ' · ' + extra : ''} · ${PUI.actWindow(a)}${score}</div>
+            ${a.my ? `<div class="mt-1">${PUI.myBadge(a.my.state)}</div>` : ''}
+          </div>
+          <div class="text-end">${action}</div>
+        </div>`;
+      }).join('');
+    }
+
+    const cModal = new bootstrap.Modal('#contentModal');
+    UI.$('#actList').addEventListener('click', e => {
+      const b = e.target.closest('[data-content]');
+      if (!b) return;
+      const a = acts.find(x => x.activity_id === b.dataset.content);
+      const yt = PUI.youtubeId(a.content_url);
+      UI.$('#cTitle').textContent = a.title;
+      UI.$('#cBody').innerHTML = (yt ? `<div class="ratio ratio-16x9 mb-3 rounded-4 overflow-hidden"><iframe src="https://www.youtube-nocookie.com/embed/${yt}" title="${UI.esc(a.title)}" allow="accelerometer; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>` : '') +
+        (a.description ? `<p class="prose">${UI.esc(a.description)}</p>` : '') +
+        (a.content_url && !yt ? `<a href="${UI.esc(a.content_url)}" target="_blank" rel="noopener" class="btn btn-soft"><i class="bi bi-box-arrow-up-right me-1"></i>เปิดเนื้อหา</a>` : '');
+      const done = a.my && a.my.state === 'done';
+      UI.$('#cFoot').innerHTML = done ? '<span class="badge-soft success me-auto"><i class="bi bi-check-circle-fill"></i>เรียนแล้ว</span><button class="btn btn-light" data-bs-dismiss="modal">ปิด</button>'
+        : `<button class="btn btn-light" data-bs-dismiss="modal">ปิด</button><button class="btn btn-primary" id="markDone"><i class="bi bi-check2-circle me-1"></i>เรียนแล้ว</button>`;
+      UI.$('#markDone')?.addEventListener('click', async ev => {
+        UI.btnLoading(ev.currentTarget, true, 'กำลังบันทึก...');
+        try { await API.call('progress.markDone', { activity_id: a.activity_id }); cModal.hide(); UI.toast('บันทึกแล้ว'); load(); }
+        catch (err) { UI.error(err); UI.btnLoading(ev.currentTarget, false); }
+      });
+      cModal.show();
+    });
+    document.getElementById('contentModal').addEventListener('hidden.bs.modal', () => { UI.$('#cBody').innerHTML = ''; });
 
     function renderAction() {
       const st = PUI.state(p);
