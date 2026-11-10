@@ -163,7 +163,7 @@
         const cap = parseInt(p.capacity, 10);
         return `<tr>
           <td data-label="" class="td-main"><div class="d-flex align-items-center gap-3 min-w-0"><div class="pj-thumb">${PUI.cover(p)}</div>
-            <div class="min-w-0"><a href="../project.html?id=${p.project_id}" class="fw-semibold text-body text-decoration-none">${UI.esc(p.title)}</a><div class="small text-muted">${UI.esc(p.code)}</div></div></div></td>
+            <div class="min-w-0"><a href="../project.html?id=${p.project_id}" class="fw-semibold text-body text-decoration-none">${UI.esc(p.title)}</a><div class="small text-muted">${UI.esc(p.code)} · <a href="../creator/reports.html?project_id=${p.project_id}" class="text-decoration-none"><i class="bi bi-bar-chart-line me-1"></i>รายงาน</a></div></div></div></td>
           <td data-label="ผู้รับผิดชอบ" class="small">${UI.esc(p.owner_name || '-')}</td>
           <td data-label="ผู้ลงทะเบียน"><b>${p.enrolled}</b><span class="small text-muted">${cap ? ' / ' + cap : ''} คน</span></td>
           <td data-label="สถานะ">${p.status === 'published' ? PUI.stateBadge(p) : PUI.statusBadge(p.status)}</td>
