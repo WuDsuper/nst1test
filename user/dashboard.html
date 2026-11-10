@@ -20,59 +20,40 @@
       <main class="app-content">
         <div class="hero-card mb-4 fade-up">
           <div class="row align-items-center g-3">
-            <div class="col-md-8">
+            <div class="col-md-7">
               <div class="opacity-75 small mb-1" id="today"></div>
               <h2 class="h3 fw-bold mb-1">สวัสดี, <span id="hello"></span> 👋</h2>
-              <p class="mb-0 opacity-75">พร้อมเรียนรู้สิ่งใหม่วันนี้หรือยัง? เลือกโครงการที่สนใจแล้วเริ่มกันเลย</p>
+              <p class="mb-0 opacity-75">ติดตามโครงการที่คุณเข้าร่วม และค้นหาโครงการใหม่ที่น่าสนใจ</p>
             </div>
-            <div class="col-md-4 text-md-end">
+            <div class="col-md-5 text-md-end">
               <div class="d-inline-flex align-items-center gap-2 glass px-3 py-2">
                 <i class="bi bi-calendar3"></i>
-                <span>ปีงบประมาณ</span>
-                <select class="form-select form-select-sm bg-transparent text-white border-0 fw-semibold" id="fySelect" style="width:auto" aria-label="เลือกปีงบประมาณ"></select>
+                <select class="form-select form-select-sm bg-transparent text-white border-0 fw-semibold" id="fy" style="width:auto" aria-label="เลือกปีงบประมาณ"></select>
               </div>
             </div>
           </div>
         </div>
 
         <div class="row g-3 mb-4">
-          <div class="col-6 col-lg-3"><div class="card stat-card"><div class="stat-icon soft-primary"><i class="bi bi-folder2-open"></i></div><div><div class="stat-value">0</div><div class="stat-label">โครงการที่เข้าร่วม</div></div></div></div>
-          <div class="col-6 col-lg-3"><div class="card stat-card"><div class="stat-icon soft-success"><i class="bi bi-check2-circle"></i></div><div><div class="stat-value">0</div><div class="stat-label">กิจกรรมที่ทำแล้ว</div></div></div></div>
-          <div class="col-6 col-lg-3"><div class="card stat-card"><div class="stat-icon soft-warning"><i class="bi bi-hourglass-split"></i></div><div><div class="stat-value">0</div><div class="stat-label">รอดำเนินการ</div></div></div></div>
-          <div class="col-6 col-lg-3"><div class="card stat-card"><div class="stat-icon soft-pink"><i class="bi bi-award"></i></div><div><div class="stat-value">0</div><div class="stat-label">ผ่านการอบรม</div></div></div></div>
+          <div class="col-6 col-lg-3"><div class="card stat-card"><div class="stat-icon soft-primary"><i class="bi bi-folder2-open"></i></div><div><div class="stat-value" id="sJoined">–</div><div class="stat-label">โครงการที่เข้าร่วม</div></div></div></div>
+          <div class="col-6 col-lg-3"><div class="card stat-card"><div class="stat-icon soft-warning"><i class="bi bi-hourglass-split"></i></div><div><div class="stat-value" id="sPending">–</div><div class="stat-label">รออนุมัติ</div></div></div></div>
+          <div class="col-6 col-lg-3"><div class="card stat-card"><div class="stat-icon soft-success"><i class="bi bi-clock-history"></i></div><div><div class="stat-value" id="sHours">–</div><div class="stat-label">ชั่วโมงอบรมรวม</div></div></div></div>
+          <div class="col-6 col-lg-3"><div class="card stat-card"><div class="stat-icon soft-pink"><i class="bi bi-award"></i></div><div><div class="stat-value" id="sDone">–</div><div class="stat-label">ผ่านการอบรม</div></div></div></div>
         </div>
 
-        <div class="row g-3">
-          <div class="col-lg-8">
-            <div class="card h-100">
-              <div class="card-header"><i class="bi bi-journal-bookmark me-2 text-primary"></i>โครงการของฉัน</div>
-              <div class="card-body">
-                <div class="empty-state">
-                  <div class="icon soft-primary"><i class="bi bi-journal-plus"></i></div>
-                  <h5>ยังไม่ได้เข้าร่วมโครงการ</h5>
-                  <p>ระบบลงทะเบียนเข้าร่วมโครงการจะเปิดให้ใช้งานเร็ว ๆ นี้</p>
-                  <button class="btn btn-primary" disabled><i class="bi bi-search me-1"></i>ค้นหาโครงการ</button>
-                </div>
-              </div>
-            </div>
+        <div class="card mb-4">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-journal-bookmark me-2 text-primary"></i>โครงการของฉัน</span>
+            <a href="projects.html" class="small text-decoration-none">ค้นหาโครงการ <i class="bi bi-arrow-right"></i></a>
           </div>
-          <div class="col-lg-4">
-            <div class="card h-100">
-              <div class="card-header"><i class="bi bi-person-badge me-2 text-primary"></i>ข้อมูลของฉัน</div>
-              <div class="card-body text-center">
-                <span class="avatar lg mb-3" id="pAvatar"></span>
-                <h5 class="mb-1" id="pName"></h5>
-                <div class="text-muted small mb-2" id="pEmail"></div>
-                <div class="mb-3" id="pRole"></div>
-                <div class="text-start small vstack gap-2 border-top pt-3">
-                  <div class="d-flex gap-2"><i class="bi bi-briefcase text-muted"></i><span id="pPos"></span></div>
-                  <div class="d-flex gap-2"><i class="bi bi-building text-muted"></i><span id="pOrg"></span></div>
-                </div>
-                <a href="profile.html" class="btn btn-soft w-100 mt-3"><i class="bi bi-pencil-square me-1"></i>แก้ไขข้อมูล</a>
-              </div>
-            </div>
-          </div>
+          <div class="list-group list-group-flush" id="mine"><div class="p-4"><div class="skeleton" style="height:100px"></div></div></div>
         </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="mb-0"><i class="bi bi-stars me-2 text-warning"></i>โครงการที่เปิดรับสมัคร</h5>
+          <a href="projects.html" class="small text-decoration-none">ดูทั้งหมด <i class="bi bi-arrow-right"></i></a>
+        </div>
+        <div class="row g-3" id="suggest"></div>
       </main>
     </div>
   </div>
@@ -85,22 +66,61 @@
   <script src="../assets/js/api.js"></script>
   <script src="../assets/js/auth.js"></script>
   <script src="../assets/js/layout.js"></script>
+  <script src="../assets/js/projects.js"></script>
   <script>
-    const me = Auth.require(['user', 'creator', 'admin']);
+    const me = Auth.require();
+    let mine = [];
+
     if (me) {
       Layout.init(me, { active: 'dashboard', title: 'แดชบอร์ด' });
       UI.$('#hello').textContent = me.first_name;
       UI.$('#today').textContent = UI.thaiDateLong(new Date().toISOString());
-      UI.$('#pAvatar').textContent = UI.initials(me);
-      UI.$('#pName').textContent = UI.fullName(me);
-      UI.$('#pEmail').textContent = me.email;
-      UI.$('#pRole').innerHTML = UI.roleBadge(me.role);
-      UI.$('#pPos').textContent = me.position || '-';
-      UI.$('#pOrg').textContent = me.organization || '-';
-      API.call('fy.list').then(list => {
-        const sel = UI.$('#fySelect');
-        sel.innerHTML = list.map(f => `<option class="text-dark" value="${f.fy_id}" ${f.is_active === 'TRUE' ? 'selected' : ''}>${UI.esc(f.year)}</option>`).join('');
-      }).catch(() => { });
+      init();
+    }
+
+    async function init() {
+      try {
+        const sel = UI.$('#fy');
+        await PUI.fillFySelect(sel, { allOption: true });
+        UI.$$('#fy option').forEach(o => o.classList.add('text-dark'));
+        mine = await API.call('enroll.my');
+        sel.addEventListener('change', render);
+        render();
+      } catch (err) { UI.error(err); }
+    }
+
+    async function render() {
+      const fy = UI.$('#fy').value;
+      const list = mine.filter(e => !fy || e.project.fy_id === fy);
+      const joined = list.filter(e => ['approved', 'completed'].includes(e.status));
+      UI.$('#sJoined').textContent = joined.length;
+      UI.$('#sPending').textContent = list.filter(e => e.status === 'pending').length;
+      UI.$('#sHours').textContent = list.filter(e => e.status === 'completed').reduce((s, e) => s + (Number(e.project.hours) || 0), 0);
+      UI.$('#sDone').textContent = list.filter(e => e.status === 'completed').length;
+
+      UI.$('#mine').innerHTML = list.length ? list.map(e => {
+        const p = e.project;
+        return `<a href="../project.html?id=${p.project_id}" class="list-group-item list-group-item-action bg-transparent d-flex align-items-center gap-3 py-3">
+          <div class="pj-thumb">${PUI.cover(p)}</div>
+          <div class="min-w-0 flex-grow-1">
+            <div class="fw-semibold text-truncate">${UI.esc(p.title)}</div>
+            <div class="small text-muted"><i class="bi bi-calendar-event me-1"></i>${PUI.dateRange(p.start_date, p.end_date)}${p.hours ? ' · ' + UI.esc(p.hours) + ' ชม.' : ''}</div>
+          </div>
+          <div class="text-end">${PUI.enrollBadge(e.status)}</div>
+        </a>`;
+      }).join('') : `<div class="empty-state">
+          <div class="icon soft-primary"><i class="bi bi-journal-plus"></i></div>
+          <h5>ยังไม่ได้เข้าร่วมโครงการ${fy ? 'ในปีงบประมาณนี้' : ''}</h5>
+          <p>เลือกโครงการที่สนใจแล้วลงทะเบียนได้เลย</p>
+          <a href="projects.html" class="btn btn-primary"><i class="bi bi-search me-1"></i>ค้นหาโครงการ</a>
+        </div>`;
+
+      try {
+        const open = (await API.call('project.list', { scope: 'public', fy_id: fy }))
+          .filter(p => PUI.state(p).canJoin && !p.my_status).slice(0, 3);
+        UI.$('#suggest').innerHTML = open.length ? open.map(p => PUI.card(p, '../')).join('')
+          : '<div class="col-12"><div class="card"><div class="card-body text-center text-muted py-4"><i class="bi bi-inbox me-1"></i>ไม่มีโครงการที่เปิดรับสมัครเพิ่มเติมในขณะนี้</div></div></div>';
+      } catch (err) { /* ไม่กระทบส่วนอื่น */ }
     }
   </script>
 </body>
