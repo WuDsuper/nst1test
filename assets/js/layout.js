@@ -9,7 +9,7 @@ const Layout = (() => {
       { key: 'activities', icon: 'list-check', label: 'กิจกรรม', href: 'creator/activities.html' },
       { key: 'participants', icon: 'person-check', label: 'ผู้เข้าร่วม', href: 'creator/participants.html' },
       { key: 'grading', icon: 'clipboard-check', label: 'ตรวจงาน', href: 'creator/grading.html' },
-      { key: 'reports', icon: 'bar-chart-line', label: 'รายงานผล', soon: true },
+      { key: 'reports', icon: 'bar-chart-line', label: 'รายงานผล', href: 'creator/reports.html' },
       { section: 'จัดการระบบ' },
       { key: 'users', icon: 'people', label: 'ผู้ใช้งาน', href: 'admin/users.html' },
       { key: 'fy', icon: 'calendar3', label: 'ปีงบประมาณ', href: 'admin/fiscal-years.html' },
@@ -24,13 +24,13 @@ const Layout = (() => {
       { key: 'activities', icon: 'list-check', label: 'กิจกรรม', href: 'creator/activities.html' },
       { key: 'participants', icon: 'person-check', label: 'ผู้เข้าร่วม', href: 'creator/participants.html' },
       { key: 'grading', icon: 'clipboard-check', label: 'ตรวจงาน', href: 'creator/grading.html' },
-      { key: 'reports', icon: 'bar-chart-line', label: 'รายงานผล', soon: true }
+      { key: 'reports', icon: 'bar-chart-line', label: 'รายงานผล', href: 'creator/reports.html' }
     ],
     user: [
       { section: 'เมนูหลัก' },
       { key: 'dashboard', icon: 'grid-1x2', label: 'แดชบอร์ด', href: 'user/dashboard.html' },
       { key: 'explore', icon: 'search', label: 'ค้นหาโครงการ', href: 'user/projects.html' },
-      { key: 'results', icon: 'award', label: 'ผลการอบรม', soon: true }
+      { key: 'results', icon: 'award', label: 'ผลการอบรม', href: 'user/results.html' }
     ]
   };
   const COMMON = [

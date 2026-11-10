@@ -6,7 +6,7 @@
  * บัญชีทดลอง: admin@demo.local / admin1234, creator@demo.local / creator1234, user@demo.local / user1234
  */
 const Mock = (() => {
-  const KEY = 'tms_demo_sheets_v3';
+  const KEY = 'tms_demo_sheets_v4';
   let G = null;
   let store = null;
   let mails = [];
@@ -217,7 +217,8 @@ const Mock = (() => {
 
     const enroll = (p, u, status, d) => G.insert_('Enrollments', { enroll_id: G.uuid_(), project_id: p.project_id, user_id: u.user_id, status, enrolled_at: ago(d), completed_at: status === 'completed' ? ago(d - 5) : '' });
     enroll(p1, user, 'approved', 3);
-    [0, 1, 2].forEach(i => enroll(p1, teachers[i], 'approved', 2 + i));
+    [0, 1, 3, 4, 5].forEach(i => enroll(p1, teachers[i], 'approved', 2 + i));
+    G.insert_('Enrollments', { enroll_id: G.uuid_(), project_id: p1.project_id, user_id: teachers[2].user_id, status: 'completed', enrolled_at: ago(4), completed_at: ago(0.5) });
     enroll(p2, teachers[0], 'pending', 1);
     enroll(p2, teachers[3], 'pending', 1);
     enroll(p2, teachers[4], 'approved', 2);
@@ -251,16 +252,51 @@ const Mock = (() => {
     q(post, 4, 'short', 'คำย่อภาษาอังกฤษของ "ชุมชนการเรียนรู้ทางวิชาชีพ" คือ', [], ['PLC'], 1);
     q(post, 5, 'essay', 'อธิบายแนวทางนำการจัดการเรียนรู้เชิงรุกไปใช้ในชั้นเรียนของท่าน', [], [], 5);
 
-    // ผลงานตัวอย่างของครูท่านอื่น
-    const qs = G.readAll_('Questions').filter(x => x.activity_id === post.activity_id);
-    const ans = {};
-    qs.forEach(x => { ans[x.question_id] = x.type === 'single' ? 1 : x.type === 'truefalse' ? 0 : x.type === 'multiple' ? [0, 2, 3] : x.type === 'short' ? 'plc' : 'ใช้ Think-Pair-Share ในคาบคณิตศาสตร์'; });
-    G.insert_('QuizAttempts', { attempt_id: G.uuid_(), activity_id: post.activity_id, user_id: teachers[0].user_id, attempt_no: '1',
-      answers_json: JSON.stringify({ order: qs.map(x => x.question_id), answers: ans, essay: {} }),
-      score: '5', max_score: '10', percent: '50', passed: 'FALSE', started_at: ago(1), submitted_at: ago(1), graded_status: 'waiting' });
+    // ผลงานตัวอย่าง (ใช้แสดงรายงานผล)
+    const qsOf = a => G.readAll_('Questions').filter(x => x.activity_id === a.activity_id).sort((x, y) => Number(x.order_no) - Number(y.order_no));
+    const RIGHT = { single: 1, truefalse: 0, multiple: [0, 2, 3], short: 'PLC' };
+    const WRONG = { single: 0, truefalse: 1, multiple: [0], short: 'ไม่ทราบ' };
+    const attempt = (a, u, no, flags, essayScore, d) => {
+      const qs = qsOf(a);
+      const answers = {}, essay = {};
+      let score = 0, max = 0, waiting = false;
+      qs.forEach((x, i) => {
+        const sc = Number(x.score);
+        max += sc;
+        if (x.type === 'essay') {
+          answers[x.question_id] = 'นำเทคนิค Think-Pair-Share และการเรียนรู้แบบโครงงานไปใช้ในชั้นเรียน';
+          if (essayScore === undefined) waiting = true; else { essay[x.question_id] = essayScore; score += essayScore; }
+        } else {
+          answers[x.question_id] = flags[i] ? RIGHT[x.type] : WRONG[x.type];
+          if (flags[i]) score += sc;
+        }
+      });
+      const percent = Math.round(score / max * 10000) / 100;
+      G.insert_('QuizAttempts', { attempt_id: G.uuid_(), activity_id: a.activity_id, user_id: u.user_id, attempt_no: String(no),
+        answers_json: JSON.stringify({ order: qs.map(x => x.question_id), answers, essay }),
+        score: String(score), max_score: String(max), percent: String(percent),
+        passed: !waiting && percent >= JSON.parse(a.settings_json).pass_score_pct ? 'TRUE' : 'FALSE',
+        started_at: ago(d), submitted_at: ago(d), graded_status: waiting ? 'waiting' : essayScore !== undefined ? 'done' : 'auto' });
+    };
+    const T = teachers;
+    attempt(pre, user, 1, [1, 0, 1], undefined, 2.5);
+    attempt(pre, T[0], 1, [1, 0, 0], undefined, 2);
+    attempt(pre, T[1], 1, [1, 1, 0], undefined, 3);
+    attempt(pre, T[2], 1, [0, 1, 0], undefined, 3.8);
+    attempt(pre, T[3], 1, [1, 1, 1], undefined, 4.5);
+    attempt(pre, T[4], 1, [0, 0, 0], undefined, 5.5);
+    attempt(post, T[0], 1, [1, 1, 1, 1], undefined, 1);
+    attempt(post, T[1], 1, [1, 1, 1, 1], 4, 1.5);
+    attempt(post, T[2], 1, [1, 0, 0, 1], 2, 2);
+    attempt(post, T[2], 2, [1, 1, 1, 1], 3, 1);
+    attempt(post, T[3], 1, [1, 1, 1, 0], 5, 2);
+    const content = G.readAll_('Activities').find(x => x.type === 'content');
+    [T[1], T[2], T[3], T[4]].forEach((u, i) => G.insert_('Progress', { progress_id: G.uuid_(), activity_id: content.activity_id, user_id: u.user_id, completed_at: ago(2 + i * 0.5) }));
     const asg = G.readAll_('Activities').find(x => x.type === 'assignment');
-    G.insert_('Submissions', { submission_id: G.uuid_(), activity_id: asg.activity_id, user_id: teachers[1].user_id, file_id: '', file_url: '', file_name: '',
-      link_url: 'https://drive.google.com/file/d/example', text_answer: '', submitted_at: ago(1), score: '', feedback: '', grader_id: '', graded_at: '', status: 'submitted' });
+    const sub = (u, o) => G.insert_('Submissions', Object.assign({ submission_id: G.uuid_(), activity_id: asg.activity_id, user_id: u.user_id, file_id: '', file_url: '', file_name: '',
+      link_url: 'https://drive.google.com/file/d/example', text_answer: '', submitted_at: ago(1), score: '', feedback: '', grader_id: '', graded_at: '', status: 'submitted' }, o));
+    sub(T[1], {});
+    sub(T[2], { score: '16', feedback: 'แผนชัดเจน ควรเพิ่มการประเมินระหว่างเรียน', grader_id: creator.user_id, graded_at: ago(0.5), status: 'graded', submitted_at: ago(1.2) });
   }
 
   function loadStore() { try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { return null; } }
