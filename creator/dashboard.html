@@ -25,28 +25,34 @@
               <h2 class="h3 fw-bold mb-1">สวัสดี, <span id="hello"></span> 👋</h2>
               <p class="mb-0 opacity-75">จัดการโครงการ กิจกรรม และติดตามผลผู้เข้าอบรมของคุณ</p>
             </div>
-            <button class="btn btn-white" disabled><i class="bi bi-plus-lg me-1"></i>สร้างโครงการใหม่</button>
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+              <div class="glass px-2 py-1"><select class="form-select form-select-sm bg-transparent text-white border-0 fw-semibold" id="fy" aria-label="ปีงบประมาณ"></select></div>
+              <a href="project-edit.html" class="btn btn-white"><i class="bi bi-plus-lg me-1"></i>สร้างโครงการ</a>
+            </div>
           </div>
         </div>
 
         <div class="row g-3 mb-4">
-          <div class="col-6 col-xl-3"><div class="card stat-card"><div class="stat-icon soft-primary"><i class="bi bi-folder2-open"></i></div><div><div class="stat-value">0</div><div class="stat-label">โครงการของฉัน</div></div></div></div>
-          <div class="col-6 col-xl-3"><div class="card stat-card"><div class="stat-icon soft-success"><i class="bi bi-people"></i></div><div><div class="stat-value">0</div><div class="stat-label">ผู้เข้าร่วมทั้งหมด</div></div></div></div>
-          <div class="col-6 col-xl-3"><div class="card stat-card"><div class="stat-icon soft-warning"><i class="bi bi-person-exclamation"></i></div><div><div class="stat-value">0</div><div class="stat-label">รออนุมัติ</div></div></div></div>
-          <div class="col-6 col-xl-3"><div class="card stat-card"><div class="stat-icon soft-danger"><i class="bi bi-clipboard-check"></i></div><div><div class="stat-value">0</div><div class="stat-label">งานรอตรวจ</div></div></div></div>
+          <div class="col-6 col-xl-3"><div class="card stat-card"><div class="stat-icon soft-primary"><i class="bi bi-folder2-open"></i></div><div><div class="stat-value" id="sProjects">–</div><div class="stat-label">โครงการของฉัน</div></div></div></div>
+          <div class="col-6 col-xl-3"><div class="card stat-card"><div class="stat-icon soft-info"><i class="bi bi-globe2"></i></div><div><div class="stat-value" id="sPublished">–</div><div class="stat-label">เผยแพร่แล้ว</div></div></div></div>
+          <div class="col-6 col-xl-3"><div class="card stat-card"><div class="stat-icon soft-success"><i class="bi bi-people"></i></div><div><div class="stat-value" id="sPart">–</div><div class="stat-label">ผู้เข้าร่วม (อนุมัติแล้ว)</div></div></div></div>
+          <div class="col-6 col-xl-3"><div class="card stat-card"><div class="stat-icon soft-warning"><i class="bi bi-person-exclamation"></i></div><div><div class="stat-value" id="sPending">–</div><div class="stat-label">รออนุมัติ</div></div></div></div>
         </div>
 
-        <div class="card">
-          <div class="card-body">
-            <div class="empty-state">
-              <div class="icon soft-purple"><i class="bi bi-easel2"></i></div>
-              <h5>เริ่มสร้างหลักสูตรแรกของคุณ</h5>
-              <p class="mx-auto" style="max-width:520px">เครื่องมือสร้างโครงการ กิจกรรม แบบทดสอบ และแบบส่งงาน จะเปิดให้ใช้งานเร็ว ๆ นี้</p>
-              <div class="row g-3 justify-content-center mt-2 text-start" style="max-width:720px;margin:auto">
-                <div class="col-sm-4"><div class="d-flex gap-2"><i class="bi bi-1-circle-fill text-primary fs-5"></i><div><div class="fw-semibold">สร้างโครงการ</div><div class="small">เลือกปีงบประมาณ ตั้งค่ารับสมัคร</div></div></div></div>
-                <div class="col-sm-4"><div class="d-flex gap-2"><i class="bi bi-2-circle-fill text-primary fs-5"></i><div><div class="fw-semibold">เพิ่มกิจกรรม</div><div class="small">แบบทดสอบ ส่งงาน เนื้อหา</div></div></div></div>
-                <div class="col-sm-4"><div class="d-flex gap-2"><i class="bi bi-3-circle-fill text-primary fs-5"></i><div><div class="fw-semibold">ติดตามผล</div><div class="small">ตรวจงาน ดูรายงาน ส่งออก Excel</div></div></div></div>
+        <div class="row g-3">
+          <div class="col-lg-7">
+            <div class="card h-100">
+              <div class="card-header"><i class="bi bi-bar-chart me-2 text-primary"></i>ผู้ลงทะเบียนแยกตามโครงการ</div>
+              <div class="card-body"><div style="height:300px"><canvas id="chart"></canvas></div><div id="chartEmpty" class="d-none text-center text-muted py-5">ยังไม่มีข้อมูล</div></div>
+            </div>
+          </div>
+          <div class="col-lg-5">
+            <div class="card h-100">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-folder2-open me-2 text-primary"></i>โครงการในปีนี้</span>
+                <a href="projects.html" class="small text-decoration-none">จัดการ <i class="bi bi-arrow-right"></i></a>
               </div>
+              <div class="list-group list-group-flush" id="list"></div>
             </div>
           </div>
         </div>
@@ -56,18 +62,89 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <script src="../assets/js/config.js"></script>
   <script src="../assets/js/mock.js"></script>
   <script src="../assets/js/utils.js"></script>
   <script src="../assets/js/api.js"></script>
   <script src="../assets/js/auth.js"></script>
   <script src="../assets/js/layout.js"></script>
+  <script src="../assets/js/projects.js"></script>
   <script>
     const me = Auth.require(['creator', 'admin']);
+    let chart = null, data = null;
+
     if (me) {
       Layout.init(me, { active: 'dashboard', title: 'แดชบอร์ดผู้สร้างหลักสูตร' });
       UI.$('#hello').textContent = me.first_name;
       UI.$('#today').textContent = UI.thaiDateLong(new Date().toISOString());
+      PUI.fillFySelect(UI.$('#fy')).then(() => {
+        UI.$$('#fy option').forEach(o => o.classList.add('text-dark'));
+        load();
+      }).catch(UI.error);
+      UI.$('#fy').addEventListener('change', load);
+      document.addEventListener('tms:theme', () => data && drawChart());
+    }
+
+    async function load() {
+      try {
+        data = await API.call('dash.creator', { fy_id: UI.$('#fy').value });
+        const t = data.totals;
+        UI.$('#sProjects').textContent = t.projects;
+        UI.$('#sPublished').textContent = t.published;
+        UI.$('#sPart').textContent = t.participants;
+        UI.$('#sPending').textContent = t.pending;
+        renderList();
+        drawChart();
+      } catch (err) { UI.error(err); }
+    }
+
+    function renderList() {
+      const list = data.projects;
+      UI.$('#list').innerHTML = list.length ? list.map(p => `
+        <div class="list-group-item bg-transparent py-3">
+          <div class="d-flex align-items-center gap-3">
+            <div class="pj-thumb">${PUI.cover(p)}</div>
+            <div class="min-w-0 flex-grow-1">
+              <a href="project-edit.html?id=${p.project_id}" class="fw-semibold text-body text-decoration-none d-block text-truncate">${UI.esc(p.title)}</a>
+              <div class="d-flex flex-wrap gap-1 mt-1">${PUI.statusBadge(p.status)}${p.pending ? `<a href="participants.html?id=${p.project_id}" class="badge-soft warning text-decoration-none"><i class="bi bi-person-exclamation"></i>รออนุมัติ ${p.pending}</a>` : ''}</div>
+            </div>
+            <div class="text-end"><div class="fw-bold font-prompt">${p.approved}</div><div class="small text-muted">คน</div></div>
+          </div>
+        </div>`).join('')
+        : `<div class="empty-state"><div class="icon soft-purple"><i class="bi bi-folder-plus"></i></div><h6>ยังไม่มีโครงการในปีงบประมาณนี้</h6>
+           <a href="project-edit.html" class="btn btn-primary btn-sm mt-2"><i class="bi bi-plus-lg me-1"></i>สร้างโครงการ</a></div>`;
+    }
+
+    function drawChart() {
+      if (chart) chart.destroy();
+      const list = data.projects.filter(p => p.status !== 'draft');
+      UI.$('#chart').classList.toggle('d-none', !list.length);
+      UI.$('#chartEmpty').classList.toggle('d-none', !!list.length);
+      if (!list.length) return;
+      const css = getComputedStyle(document.documentElement);
+      const primary = css.getPropertyValue('--tms-primary').trim() || '#4F46E5';
+      Chart.defaults.font.family = "'Sarabun', sans-serif";
+      Chart.defaults.color = css.getPropertyValue('--tms-muted').trim();
+      const short = s => s.length > 22 ? s.slice(0, 22) + '…' : s;
+      chart = new Chart(UI.$('#chart'), {
+        type: 'bar',
+        data: {
+          labels: list.map(p => short(p.title)),
+          datasets: [
+            { label: 'อนุมัติแล้ว', data: list.map(p => p.approved), backgroundColor: primary, borderRadius: 8 },
+            { label: 'รออนุมัติ', data: list.map(p => p.pending || 0), backgroundColor: '#F59E0B', borderRadius: 8 }
+          ]
+        },
+        options: {
+          maintainAspectRatio: false, indexAxis: list.length > 4 ? 'y' : 'x',
+          plugins: { legend: { position: 'bottom' } },
+          scales: {
+            x: { stacked: true, grid: { display: false }, ticks: { precision: 0 } },
+            y: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: css.getPropertyValue('--tms-border').trim() } }
+          }
+        }
+      });
     }
   </script>
 </body>

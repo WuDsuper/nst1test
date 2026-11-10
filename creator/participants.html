@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ผู้เข้าร่วมโครงการ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="../assets/css/style.css" rel="stylesheet">
+  <script src="../assets/js/theme.js"></script>
+</head>
+<body data-root="../">
+  <div class="app">
+    <aside class="sidebar offcanvas-lg offcanvas-start" tabindex="-1" id="sidebar"></aside>
+    <div class="app-main">
+      <header class="topbar" id="topbar"></header>
+      <main class="app-content">
+        <div class="card mb-3">
+          <div class="card-body">
+            <label class="form-label" for="pjSelect">เลือกโครงการ</label>
+            <select class="form-select" id="pjSelect"></select>
+          </div>
+        </div>
+
+        <div id="content" class="d-none">
+          <div class="card mb-3 overflow-hidden">
+            <div class="row g-0">
+              <div class="col-md-3"><div class="h-100" style="min-height:130px" id="pjCover"></div></div>
+              <div class="col-md-9">
+                <div class="card-body">
+                  <div class="d-flex flex-wrap justify-content-between gap-2">
+                    <div class="min-w-0">
+                      <div class="small text-muted" id="pjCode"></div>
+                      <h2 class="h5 fw-bold mb-2" id="pjTitle"></h2>
+                      <div class="d-flex flex-wrap gap-2" id="pjBadges"></div>
+                    </div>
+                    <div class="d-flex gap-2 align-items-start">
+                      <a class="btn btn-sm btn-light" id="editLink"><i class="bi bi-pencil me-1"></i>แก้ไขโครงการ</a>
+                      <button class="btn btn-sm btn-outline-primary" id="exportBtn"><i class="bi bi-file-earmark-spreadsheet me-1"></i>ส่งออก Excel</button>
+                    </div>
+                  </div>
+                  <div class="mt-3" id="pjSeat"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <div class="tab-pills" id="tabs"></div>
+            <div class="input-group" style="max-width:300px">
+              <span class="input-group-text"><i class="bi bi-search"></i></span>
+              <input type="search" class="form-control" id="q" placeholder="ค้นหาชื่อ อีเมล หน่วยงาน">
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="table-responsive">
+              <table class="table table-hover table-cards table-wide">
+                <thead><tr>
+                  <th style="width:40px"><input class="form-check-input lg" type="checkbox" id="checkAll" aria-label="เลือกทั้งหมด"></th>
+                  <th>ผู้ลงทะเบียน</th><th>หน่วยงาน</th><th>โทรศัพท์</th><th>ลงทะเบียนเมื่อ</th><th>สถานะ</th><th class="text-end">จัดการ</th>
+                </tr></thead>
+                <tbody id="tbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="bulk-bar d-none" id="bulkBar">
+            <span class="fw-semibold me-1"><i class="bi bi-check2-square me-1"></i>เลือก <span id="selCount">0</span> คน</span>
+            <button class="btn btn-sm btn-success" data-bulk="approved"><i class="bi bi-check-lg me-1"></i>อนุมัติ</button>
+            <button class="btn btn-sm btn-warning" data-bulk="rejected"><i class="bi bi-x-lg me-1"></i>ไม่อนุมัติ</button>
+            <button class="btn btn-sm btn-outline-light" data-bulk="remove"><i class="bi bi-person-dash me-1"></i>ลบออก</button>
+            <div class="form-check form-switch ms-md-auto mb-0">
+              <input class="form-check-input" type="checkbox" id="notify">
+              <label class="form-check-label small" for="notify">แจ้งผลทางอีเมล</label>
+            </div>
+            <button class="btn btn-sm btn-link text-white" id="clearSel">ยกเลิก</button>
+          </div>
+        </div>
+
+        <div id="noProject" class="d-none">
+          <div class="card"><div class="empty-state">
+            <div class="icon soft-purple"><i class="bi bi-folder2-open"></i></div>
+            <h5>ยังไม่มีโครงการ</h5><p>สร้างโครงการก่อน แล้วจึงจัดการผู้เข้าร่วมได้</p>
+            <a href="project-edit.html" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>สร้างโครงการ</a>
+          </div></div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/mock.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/layout.js"></script>
+  <script src="../assets/js/projects.js"></script>
+  <script>
+    const me = Auth.require(['creator', 'admin']);
+    let project = null, items = [], tab = 'all';
+    const selected = new Set();
+
+    if (me) init();
+
+    async function init() {
+      Layout.init(me, { active: 'participants', title: 'ผู้เข้าร่วมโครงการ' });
+      try {
+        const list = await API.call('project.list', { scope: me.role === 'admin' ? 'all' : 'mine' });
+        if (!list.length) { UI.$('#noProject').classList.remove('d-none'); UI.$('#pjSelect').closest('.card').classList.add('d-none'); return; }
+        const sel = UI.$('#pjSelect');
+        sel.innerHTML = list.map(p => `<option value="${p.project_id}">[ปีงบ ${UI.esc(p.fy_year)}] ${UI.esc(p.title)}${p.pending ? ` — รออนุมัติ ${p.pending}` : ''}</option>`).join('');
+        const id = UI.qs('id');
+        const firstPending = list.find(p => p.pending > 0);
+        sel.value = id && list.some(p => p.project_id === id) ? id : (firstPending || list[0]).project_id;
+        sel.addEventListener('change', () => {
+          history.replaceState(null, '', '?id=' + sel.value);
+          load();
+        });
+        load();
+      } catch (err) { UI.error(err); }
+    }
+
+    async function load() {
+      selected.clear();
+      UI.$('#content').classList.remove('d-none');
+      UI.$('#tbody').innerHTML = '<tr><td colspan="7"><div class="skeleton" style="height:120px"></div></td></tr>';
+      try {
+        const r = await API.call('enroll.listByProject', { project_id: UI.$('#pjSelect').value });
+        project = r.project;
+        items = r.items;
+        renderHeader();
+        render();
+      } catch (err) { UI.error(err); }
+    }
+
+    function renderHeader() {
+      const p = project;
+      UI.$('#pjCover').innerHTML = PUI.cover(p);
+      UI.$('#pjCode').textContent = `${p.code} · ปีงบประมาณ ${p.fy_year}`;
+      UI.$('#pjTitle').textContent = p.title;
+      UI.$('#pjBadges').innerHTML = PUI.statusBadge(p.status) + (p.status === 'published' ? PUI.stateBadge(p) : '') +
+        `<span class="badge-soft ${p.enroll_mode === 'approval' ? 'warning' : 'info'}"><i class="bi bi-${p.enroll_mode === 'approval' ? 'person-check' : 'lightning-charge'}"></i>${p.enroll_mode === 'approval' ? 'ต้องอนุมัติ' : 'รับทันที'}</span>`;
+      UI.$('#pjSeat').innerHTML = PUI.seatBar(p);
+      UI.$('#editLink').href = 'project-edit.html?id=' + p.project_id;
+    }
+
+    function filtered() {
+      const q = UI.$('#q').value.trim().toLowerCase();
+      return items.filter(e => (tab === 'all' || e.status === tab) &&
+        (!q || [e.user.first_name, e.user.last_name, e.user.email, e.user.organization, e.user.position].join(' ').toLowerCase().includes(q)));
+    }
+
+    function render() {
+      const c = s => items.filter(e => s === 'all' || e.status === s).length;
+      const tabs = [['all', 'ทั้งหมด'], ['pending', 'รออนุมัติ'], ['approved', 'ลงทะเบียนแล้ว'], ['rejected', 'ไม่อนุมัติ'], ['completed', 'ผ่านการอบรม']];
+      UI.$('#tabs').innerHTML = tabs.filter(([k]) => k === 'all' || c(k) || k === 'pending')
+        .map(([k, l]) => `<button type="button" class="${tab === k ? 'active' : ''}" data-tab="${k}">${l}<span class="n">${c(k)}</span></button>`).join('');
+
+      const list = filtered();
+      if (!list.length) {
+        UI.$('#tbody').innerHTML = `<tr><td colspan="7" data-label=""><div class="empty-state"><div class="icon soft-primary"><i class="bi bi-people"></i></div>
+          <h5>${items.length ? 'ไม่พบรายชื่อ' : 'ยังไม่มีผู้ลงทะเบียน'}</h5>${items.length ? '' : '<p class="mb-0">แชร์ลิงก์หน้าโครงการให้ผู้สนใจลงทะเบียน</p>'}</div></td></tr>`;
+      } else {
+        UI.$('#tbody').innerHTML = list.map(e => {
+          const u = e.user;
+          return `<tr>
+            <td data-label=""><input class="form-check-input lg" type="checkbox" data-check="${e.enroll_id}" ${selected.has(e.enroll_id) ? 'checked' : ''} aria-label="เลือก"></td>
+            <td data-label="" class="td-main">
+              <div class="d-flex align-items-center gap-3 min-w-0">
+                <span class="avatar">${UI.esc(UI.initials(u))}</span>
+                <div class="min-w-0"><div class="fw-semibold">${UI.esc(UI.fullName(u))}</div><div class="small text-muted text-break">${UI.esc(u.email)}</div></div>
+              </div>
+            </td>
+            <td data-label="หน่วยงาน"><div class="small">${UI.esc(u.organization || '-')}</div><div class="small text-muted">${UI.esc(u.position || '')}</div></td>
+            <td data-label="โทรศัพท์" class="small text-nowrap">${UI.esc(u.phone || '-')}</td>
+            <td data-label="ลงทะเบียนเมื่อ" class="small text-nowrap">${UI.thaiDate(e.enrolled_at, true)}</td>
+            <td data-label="สถานะ">${PUI.enrollBadge(e.status)}</td>
+            <td data-label="" class="text-end td-actions text-nowrap">
+              ${e.status !== 'approved' && e.status !== 'completed' ? `<button class="btn btn-sm btn-soft" data-one="approved" data-id="${e.enroll_id}" title="อนุมัติ"><i class="bi bi-check-lg"></i></button>` : ''}
+              ${e.status !== 'rejected' && e.status !== 'completed' ? `<button class="btn btn-sm btn-light" data-one="rejected" data-id="${e.enroll_id}" title="ไม่อนุมัติ"><i class="bi bi-x-lg"></i></button>` : ''}
+              <button class="btn btn-sm btn-soft-danger" data-one="remove" data-id="${e.enroll_id}" title="ลบออก"><i class="bi bi-person-dash"></i></button>
+            </td>
+          </tr>`;
+        }).join('');
+      }
+      UI.$('#checkAll').checked = list.length > 0 && list.every(e => selected.has(e.enroll_id));
+      updateBulk();
+    }
+
+    function updateBulk() {
+      UI.$('#selCount').textContent = selected.size;
+      UI.$('#bulkBar').classList.toggle('d-none', selected.size === 0);
+    }
+
+    UI.$('#tabs').addEventListener('click', e => {
+      const b = e.target.closest('[data-tab]');
+      if (b) { tab = b.dataset.tab; render(); }
+    });
+    UI.$('#q').addEventListener('input', render);
+    UI.$('#checkAll').addEventListener('change', e => {
+      filtered().forEach(x => e.target.checked ? selected.add(x.enroll_id) : selected.delete(x.enroll_id));
+      render();
+    });
+    UI.$('#clearSel').addEventListener('click', () => { selected.clear(); render(); });
+
+    UI.$('#tbody').addEventListener('change', e => {
+      const c = e.target.closest('[data-check]');
+      if (!c) return;
+      c.checked ? selected.add(c.dataset.check) : selected.delete(c.dataset.check);
+      UI.$('#checkAll').checked = filtered().every(x => selected.has(x.enroll_id));
+      updateBulk();
+    });
+
+    UI.$('#tbody').addEventListener('click', e => {
+      const b = e.target.closest('[data-one]');
+      if (b) act(b.dataset.one, [b.dataset.id]);
+    });
+    UI.$('#bulkBar').addEventListener('click', e => {
+      const b = e.target.closest('[data-bulk]');
+      if (b) act(b.dataset.bulk, [...selected]);
+    });
+
+    const LABEL = { approved: 'อนุมัติ', rejected: 'ไม่อนุมัติ', remove: 'ลบออกจากโครงการ' };
+    async function act(action, ids) {
+      if (!ids.length) return;
+      const notify = UI.$('#notify').checked;
+      if (action === 'remove' || ids.length > 1) {
+        const text = action === 'remove' ? 'ผู้ใช้จะถูกลบออกจากรายชื่อโครงการนี้' : (notify ? 'ระบบจะส่งอีเมลแจ้งผลให้แต่ละคน' : '');
+        if (!(await UI.confirm(`${LABEL[action]} ${ids.length} คน?`, text, LABEL[action]))) return;
+      }
+      try {
+        if (action === 'remove') {
+          const r = await API.call('enroll.remove', { enroll_ids: ids });
+          UI.toast(`ลบออก ${r.removed} คนแล้ว`);
+        } else {
+          const r = await API.call('enroll.setStatus', { enroll_ids: ids, status: action, notify });
+          let msg = `${LABEL[action]} ${r.updated} คนแล้ว`;
+          if (notify && !r.demo) msg += ` · ส่งอีเมล ${r.mailed} ฉบับ`;
+          UI.toast(msg);
+          if (r.mail_failed) UI.toast(`ส่งอีเมลไม่สำเร็จ ${r.mail_failed} ฉบับ`, 'warning');
+        }
+        load();
+      } catch (err) { UI.error(err); }
+    }
+
+    UI.$('#exportBtn').addEventListener('click', () => {
+      const rows = [['ลำดับ', 'คำนำหน้า', 'ชื่อ', 'นามสกุล', 'ตำแหน่ง', 'หน่วยงาน', 'โทรศัพท์', 'อีเมล', 'สถานะ', 'วันที่ลงทะเบียน']];
+      filtered().forEach((e, i) => {
+        const u = e.user;
+        rows.push([i + 1, u.prefix, u.first_name, u.last_name, u.position, u.organization,
+          u.phone ? `="${u.phone}"` : '', u.email, (PUI.ENROLL[e.status] || {}).label || e.status, UI.thaiDate(e.enrolled_at, true)]);
+      });
+      PUI.csvDownload(`ผู้เข้าร่วม_${project.code}.csv`, rows);
+    });
+  </script>
+</body>
+</html>

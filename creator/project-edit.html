@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>โครงการ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="../assets/css/style.css" rel="stylesheet">
+  <script src="../assets/js/theme.js"></script>
+</head>
+<body data-root="../">
+  <div class="app">
+    <aside class="sidebar offcanvas-lg offcanvas-start" tabindex="-1" id="sidebar"></aside>
+    <div class="app-main">
+      <header class="topbar" id="topbar"></header>
+      <main class="app-content">
+        <div class="page-head">
+          <div>
+            <a href="projects.html" class="small text-decoration-none"><i class="bi bi-arrow-left me-1"></i>กลับไปรายการโครงการ</a>
+            <h1 class="mt-1" id="pageTitle">สร้างโครงการใหม่</h1>
+          </div>
+          <div class="d-flex gap-2 d-none" id="headLinks">
+            <a class="btn btn-soft" id="viewLink" target="_blank" rel="noopener"><i class="bi bi-eye me-1"></i>ดูหน้าโครงการ</a>
+            <a class="btn btn-soft" id="partLink"><i class="bi bi-people me-1"></i>ผู้เข้าร่วม</a>
+          </div>
+        </div>
+
+        <form id="pjForm" novalidate>
+          <input type="hidden" name="project_id">
+          <div class="row g-3">
+            <div class="col-lg-8">
+              <div class="card mb-3">
+                <div class="card-header"><i class="bi bi-info-circle me-2 text-primary"></i>ข้อมูลโครงการ</div>
+                <div class="card-body">
+                  <div class="row g-3">
+                    <div class="col-sm-6">
+                      <label class="form-label" for="fy_id">ปีงบประมาณ <span class="text-danger">*</span></label>
+                      <select class="form-select" id="fy_id" name="fy_id" required></select>
+                    </div>
+                    <div class="col-sm-6">
+                      <label class="form-label" for="code">รหัสโครงการ</label>
+                      <input class="form-control" id="code" name="code" maxlength="50" placeholder="เว้นว่างเพื่อสร้างอัตโนมัติ">
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label" for="title">ชื่อโครงการ <span class="text-danger">*</span></label>
+                      <input class="form-control form-control-lg" id="title" name="title" maxlength="300" required>
+                      <div class="invalid-feedback">กรุณากรอกชื่อโครงการ</div>
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label" for="description">รายละเอียดโครงการ</label>
+                      <textarea class="form-control" id="description" name="description" rows="5" maxlength="5000"></textarea>
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label" for="objectives">วัตถุประสงค์</label>
+                      <textarea class="form-control" id="objectives" name="objectives" rows="4" maxlength="5000" placeholder="1. ...&#10;2. ..."></textarea>
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label" for="cover_url">URL ภาพปก</label>
+                      <input type="url" class="form-control" id="cover_url" name="cover_url" placeholder="https://... (เว้นว่างเพื่อใช้ภาพปกอัตโนมัติ)">
+                      <div class="form-text">ภาพแนวนอน สัดส่วนประมาณ 2:1 ใช้ลิงก์รูปภาพที่เปิดดูได้สาธารณะ</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card mb-3">
+                <div class="card-header"><i class="bi bi-easel me-2 text-primary"></i>การจัดอบรม</div>
+                <div class="card-body">
+                  <div class="row g-3">
+                    <div class="col-sm-6">
+                      <label class="form-label" for="start_date">วันเริ่มอบรม</label>
+                      <input type="date" class="form-control" id="start_date" name="start_date">
+                    </div>
+                    <div class="col-sm-6">
+                      <label class="form-label" for="end_date">วันสิ้นสุดอบรม</label>
+                      <input type="date" class="form-control" id="end_date" name="end_date">
+                    </div>
+                    <div class="col-sm-6">
+                      <label class="form-label" for="format">รูปแบบการอบรม</label>
+                      <select class="form-select" id="format" name="format">
+                        <option value="online">ออนไลน์</option>
+                        <option value="onsite">ในสถานที่</option>
+                        <option value="hybrid">ผสมผสาน (ออนไลน์ + ในสถานที่)</option>
+                      </select>
+                    </div>
+                    <div class="col-sm-6">
+                      <label class="form-label" for="hours">จำนวนชั่วโมง</label>
+                      <input type="number" class="form-control" id="hours" name="hours" min="0" step="0.5">
+                    </div>
+                    <div class="col-12" id="locationWrap">
+                      <label class="form-label" for="location">สถานที่</label>
+                      <input class="form-control" id="location" name="location" maxlength="300">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card-header"><i class="bi bi-person-plus me-2 text-primary"></i>การรับสมัคร</div>
+                <div class="card-body">
+                  <div class="row g-3">
+                    <div class="col-sm-6">
+                      <label class="form-label" for="reg_open">เปิดรับสมัคร</label>
+                      <input type="date" class="form-control" id="reg_open" name="reg_open">
+                    </div>
+                    <div class="col-sm-6">
+                      <label class="form-label" for="reg_close">ปิดรับสมัคร</label>
+                      <input type="date" class="form-control" id="reg_close" name="reg_close">
+                      <div class="form-text">เว้นว่าง = รับสมัครได้ตลอดจนกว่าจะปิดโครงการ</div>
+                    </div>
+                    <div class="col-sm-6">
+                      <label class="form-label" for="capacity">จำนวนที่รับ (คน)</label>
+                      <input type="number" class="form-control" id="capacity" name="capacity" min="0" placeholder="เว้นว่าง = ไม่จำกัด">
+                    </div>
+                    <div class="col-sm-6">
+                      <label class="form-label" for="pass_criteria">เกณฑ์ผ่าน (% ของกิจกรรมที่ต้องทำ)</label>
+                      <div class="input-group">
+                        <input type="number" class="form-control" id="pass_criteria" name="pass_criteria" min="0" max="100" value="80">
+                        <span class="input-group-text" style="border-radius:0 .75rem .75rem 0">%</span>
+                      </div>
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label">การรับผู้สมัคร</label>
+                      <div class="row g-2">
+                        <div class="col-sm-6">
+                          <label class="role-option"><input type="radio" class="d-none" name="enroll_mode" value="auto" checked>
+                            <div class="box"><span class="ri soft-success"><i class="bi bi-lightning-charge"></i></span><div><div class="fw-semibold">รับทันที</div><div class="small text-muted">ลงทะเบียนแล้วเข้าร่วมได้เลย</div></div></div></label>
+                        </div>
+                        <div class="col-sm-6">
+                          <label class="role-option"><input type="radio" class="d-none" name="enroll_mode" value="approval">
+                            <div class="box"><span class="ri soft-warning"><i class="bi bi-person-check"></i></span><div><div class="fw-semibold">ต้องอนุมัติ</div><div class="small text-muted">ผู้สร้างหลักสูตรพิจารณาก่อน</div></div></div></label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-lg-4">
+              <div class="position-sticky" style="top:90px">
+                <div class="card mb-3 overflow-hidden">
+                  <div style="aspect-ratio:16/8" id="coverPreview"></div>
+                  <div class="card-body">
+                    <label class="form-label" for="status">สถานะโครงการ</label>
+                    <select class="form-select mb-2" id="status" name="status">
+                      <option value="draft">ฉบับร่าง (ยังไม่แสดงให้ผู้ใช้เห็น)</option>
+                      <option value="published">เผยแพร่ (เปิดให้ค้นหาและลงทะเบียน)</option>
+                      <option value="closed">สิ้นสุดโครงการ (ปิดการลงทะเบียน)</option>
+                    </select>
+                    <div class="small text-muted mb-3" id="statusHint"></div>
+
+                    <div class="d-none mb-3" id="ownerWrap">
+                      <label class="form-label" for="owner_id">ผู้รับผิดชอบโครงการ</label>
+                      <select class="form-select" id="owner_id" name="owner_id"></select>
+                    </div>
+
+                    <button class="btn btn-primary w-100" type="submit" id="saveBtn"><i class="bi bi-check2-circle me-1"></i>บันทึกโครงการ</button>
+                    <button class="btn btn-soft-danger w-100 mt-2 d-none" type="button" id="delBtn"><i class="bi bi-trash me-1"></i>ลบโครงการ</button>
+                  </div>
+                </div>
+                <div class="card d-none" id="statsCard">
+                  <div class="card-body small vstack gap-2">
+                    <div class="d-flex justify-content-between"><span class="text-muted">ผู้ลงทะเบียน</span><b id="stEnrolled"></b></div>
+                    <div class="d-flex justify-content-between"><span class="text-muted">รออนุมัติ</span><b id="stPending"></b></div>
+                    <div class="d-flex justify-content-between"><span class="text-muted">แก้ไขล่าสุด</span><span id="stUpdated"></span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/mock.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/layout.js"></script>
+  <script src="../assets/js/projects.js"></script>
+  <script>
+    const me = Auth.require(['creator', 'admin']);
+    const form = UI.$('#pjForm');
+    const id = UI.qs('id');
+    const HINTS = {
+      draft: 'บันทึกไว้ก่อน ผู้ใช้ทั่วไปยังมองไม่เห็นโครงการนี้',
+      published: 'ผู้ใช้ค้นหาและลงทะเบียนได้ตามช่วงเวลารับสมัคร',
+      closed: 'แสดงเป็นโครงการที่สิ้นสุดแล้ว ไม่รับลงทะเบียนเพิ่ม'
+    };
+
+    if (me) init();
+
+    async function init() {
+      Layout.init(me, { active: 'projects', title: id ? 'แก้ไขโครงการ' : 'สร้างโครงการใหม่' });
+      try {
+        await PUI.fillFySelect(form.fy_id);
+        if (me.role === 'admin') {
+          UI.$('#ownerWrap').classList.remove('d-none');
+          const users = await API.call('user.list');
+          form.owner_id.innerHTML = users.filter(u => ['admin', 'creator'].includes(u.role) && u.status === 'active')
+            .map(u => `<option value="${u.user_id}">${UI.esc(UI.fullName(u))} (${UI.roleLabel(u.role)})</option>`).join('');
+          form.owner_id.value = me.user_id;
+        }
+        if (id) {
+          const p = await API.call('project.get', { project_id: id });
+          if (!p.can_edit) { await UI.error('คุณไม่มีสิทธิ์แก้ไขโครงการนี้'); location.href = 'projects.html'; return; }
+          UI.fillForm(form, p);
+          UI.$$('input[name="enroll_mode"]').forEach(r => { r.checked = r.value === (p.enroll_mode || 'auto'); });
+          UI.$('#pageTitle').textContent = 'แก้ไขโครงการ';
+          UI.$('#headLinks').classList.remove('d-none');
+          UI.$('#viewLink').href = '../project.html?id=' + id;
+          UI.$('#partLink').href = 'participants.html?id=' + id;
+          UI.$('#delBtn').classList.remove('d-none');
+          UI.$('#statsCard').classList.remove('d-none');
+          UI.$('#stEnrolled').textContent = p.enrolled + ' คน';
+          UI.$('#stPending').textContent = (p.pending || 0) + ' คน';
+          UI.$('#stUpdated').textContent = UI.thaiDate(p.updated_at, true);
+        }
+        refresh();
+      } catch (err) { UI.error(err); }
+    }
+
+    function refresh() {
+      const d = UI.formData(form);
+      UI.$('#coverPreview').innerHTML = PUI.cover({ project_id: d.project_id || 'new', title: d.title, cover_url: d.cover_url });
+      UI.$('#statusHint').textContent = HINTS[d.status] || '';
+      UI.$('#locationWrap').classList.toggle('d-none', d.format === 'online');
+    }
+    form.addEventListener('input', refresh);
+    form.addEventListener('change', refresh);
+
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      if (!form.checkValidity()) { form.classList.add('was-validated'); form.querySelector(':invalid')?.focus(); return; }
+      const d = UI.formData(form);
+      if (d.format === 'online') d.location = '';
+      const btn = UI.$('#saveBtn');
+      UI.btnLoading(btn, true, 'กำลังบันทึก...');
+      try {
+        const p = await API.call('project.save', d);
+        await Swal.fire({
+          icon: 'success', title: 'บันทึกโครงการแล้ว', html: `รหัสโครงการ <b>${UI.esc(p.code)}</b>`,
+          showCancelButton: true, confirmButtonText: 'กลับไปรายการ', cancelButtonText: 'แก้ไขต่อ',
+          confirmButtonColor: '#4F46E5', reverseButtons: true
+        }).then(r => {
+          if (r.isConfirmed) location.href = 'projects.html';
+          else if (!id) location.href = 'project-edit.html?id=' + p.project_id;
+        });
+      } catch (err) { UI.error(err, 'บันทึกไม่สำเร็จ'); }
+      UI.btnLoading(btn, false);
+    });
+
+    UI.$('#delBtn').addEventListener('click', async () => {
+      if (!(await UI.confirm('ลบโครงการนี้?', 'ลบได้เฉพาะโครงการที่ยังไม่มีผู้ลงทะเบียน', 'ลบโครงการ'))) return;
+      try {
+        await API.call('project.delete', { project_id: id });
+        UI.toast('ลบโครงการแล้ว');
+        setTimeout(() => location.href = 'projects.html', 600);
+      } catch (err) { UI.error(err, 'ลบไม่ได้'); }
+    });
+  </script>
+</body>
+</html>

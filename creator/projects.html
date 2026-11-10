@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>โครงการ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="../assets/css/style.css" rel="stylesheet">
+  <script src="../assets/js/theme.js"></script>
+</head>
+<body data-root="../">
+  <div class="app">
+    <aside class="sidebar offcanvas-lg offcanvas-start" tabindex="-1" id="sidebar"></aside>
+    <div class="app-main">
+      <header class="topbar" id="topbar"></header>
+      <main class="app-content">
+        <div class="page-head">
+          <div>
+            <h1 id="pageTitle">โครงการของฉัน</h1>
+            <p id="pageSub">สร้างและจัดการโครงการฝึกอบรม แยกตามปีงบประมาณ</p>
+          </div>
+          <a href="project-edit.html" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>สร้างโครงการ</a>
+        </div>
+
+        <div class="card mb-3">
+          <div class="card-body">
+            <div class="row g-2 align-items-center">
+              <div class="col-md-4"><select class="form-select" id="fy" aria-label="ปีงบประมาณ"></select></div>
+              <div class="col-md-8">
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-search"></i></span>
+                  <input type="search" class="form-control" id="q" placeholder="ค้นหาชื่อ หรือรหัสโครงการ">
+                </div>
+              </div>
+            </div>
+            <div class="tab-pills mt-3" id="tabs"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="table-responsive">
+            <table class="table table-hover table-cards table-wide">
+              <thead><tr><th>โครงการ</th><th id="thOwner" class="d-none">ผู้รับผิดชอบ</th><th>ช่วงอบรม</th><th>ผู้ลงทะเบียน</th><th>สถานะ</th><th class="text-end">จัดการ</th></tr></thead>
+              <tbody id="tbody"><tr><td colspan="6"><div class="skeleton" style="height:160px"></div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/mock.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/layout.js"></script>
+  <script src="../assets/js/projects.js"></script>
+  <script>
+    const me = Auth.require(['creator', 'admin']);
+    const isAdmin = me && me.role === 'admin';
+    let items = [];
+    let tab = 'all';
+
+    if (me) {
+      Layout.init(me, { active: 'projects', title: isAdmin ? 'โครงการทั้งหมด' : 'โครงการของฉัน' });
+      if (isAdmin) {
+        UI.$('#pageTitle').textContent = 'โครงการทั้งหมด';
+        UI.$('#pageSub').textContent = 'ผู้ดูแลระบบเห็นและแก้ไขได้ทุกโครงการ';
+        UI.$('#thOwner').classList.remove('d-none');
+      }
+      PUI.fillFySelect(UI.$('#fy'), { allOption: true }).then(load).catch(UI.error);
+      UI.$('#fy').addEventListener('change', load);
+      UI.$('#q').addEventListener('input', render);
+    }
+
+    async function load() {
+      UI.$('#tbody').innerHTML = '<tr><td colspan="6"><div class="skeleton" style="height:120px"></div></td></tr>';
+      try {
+        items = await API.call('project.list', { scope: isAdmin ? 'all' : 'mine', fy_id: UI.$('#fy').value });
+        render();
+      } catch (err) { UI.error(err); }
+    }
+
+    function render() {
+      const c = s => items.filter(p => s === 'all' || p.status === s).length;
+      const tabs = [['all', 'ทั้งหมด'], ['published', 'เผยแพร่'], ['draft', 'ฉบับร่าง'], ['closed', 'สิ้นสุด']];
+      UI.$('#tabs').innerHTML = tabs.map(([k, l]) => `<button type="button" class="${tab === k ? 'active' : ''}" data-tab="${k}">${l}<span class="n">${c(k)}</span></button>`).join('');
+
+      const q = UI.$('#q').value.trim().toLowerCase();
+      const list = items.filter(p => (tab === 'all' || p.status === tab) && (!q || (p.title + ' ' + p.code).toLowerCase().includes(q)));
+      if (!list.length) {
+        UI.$('#tbody').innerHTML = `<tr><td colspan="6" data-label=""><div class="empty-state">
+          <div class="icon soft-purple"><i class="bi bi-folder-plus"></i></div>
+          <h5>${items.length ? 'ไม่พบโครงการที่ค้นหา' : 'ยังไม่มีโครงการในปีงบประมาณนี้'}</h5>
+          ${items.length ? '' : '<a href="project-edit.html" class="btn btn-primary mt-2"><i class="bi bi-plus-lg me-1"></i>สร้างโครงการแรก</a>'}
+        </div></td></tr>`;
+        return;
+      }
+      UI.$('#tbody').innerHTML = list.map(p => {
+        const cap = parseInt(p.capacity, 10);
+        return `<tr>
+          <td data-label="" class="td-main">
+            <div class="d-flex align-items-center gap-3 min-w-0">
+              <div class="pj-thumb">${PUI.cover(p)}</div>
+              <div class="min-w-0">
+                <a href="../project.html?id=${p.project_id}" class="fw-semibold text-decoration-none text-body d-block">${UI.esc(p.title)}</a>
+                <div class="small text-muted">${UI.esc(p.code)} · ปีงบ ${UI.esc(p.fy_year)}</div>
+              </div>
+            </div>
+          </td>
+          ${isAdmin ? `<td data-label="ผู้รับผิดชอบ" class="small">${UI.esc(p.owner_name || '-')}</td>` : ''}
+          <td data-label="ช่วงอบรม" class="small text-nowrap">${PUI.dateRange(p.start_date, p.end_date)}</td>
+          <td data-label="ผู้ลงทะเบียน">
+            <span class="fw-semibold">${p.approved}</span><span class="text-muted small">${cap ? ' / ' + cap : ''} คน</span>
+            ${p.pending ? `<span class="badge-soft warning ms-1">รออนุมัติ ${p.pending}</span>` : ''}
+          </td>
+          <td data-label="สถานะ"><div class="d-flex flex-column align-items-end align-items-md-start gap-1">${PUI.statusBadge(p.status)}${p.status === 'published' ? `<span class="small text-muted">${UI.esc(PUI.state(p).label)}</span>` : ''}</div></td>
+          <td data-label="" class="text-end td-actions text-nowrap">
+            <a href="participants.html?id=${p.project_id}" class="btn btn-sm btn-soft" title="ผู้เข้าร่วม"><i class="bi bi-people"></i><span class="d-none d-xl-inline ms-1">ผู้เข้าร่วม</span></a>
+            <a href="project-edit.html?id=${p.project_id}" class="btn btn-sm btn-light" title="แก้ไข" aria-label="แก้ไข"><i class="bi bi-pencil"></i></a>
+            <button class="btn btn-sm btn-soft-danger" data-del="${p.project_id}" title="ลบ" aria-label="ลบ"><i class="bi bi-trash"></i></button>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    UI.$('#tabs').addEventListener('click', e => {
+      const b = e.target.closest('[data-tab]');
+      if (b) { tab = b.dataset.tab; render(); }
+    });
+
+    UI.$('#tbody').addEventListener('click', async e => {
+      const b = e.target.closest('[data-del]');
+      if (!b) return;
+      const p = items.find(x => x.project_id === b.dataset.del);
+      if (!(await UI.confirm('ลบโครงการนี้?', p.title, 'ลบโครงการ'))) return;
+      try {
+        await API.call('project.delete', { project_id: p.project_id });
+        UI.toast('ลบโครงการแล้ว');
+        load();
+      } catch (err) { UI.error(err, 'ลบไม่ได้'); }
+    });
+  </script>
+</body>
+</html>
