@@ -27,6 +27,7 @@
       </button>
       <div class="collapse navbar-collapse" id="nav">
         <ul class="navbar-nav ms-auto me-lg-3">
+          <li class="nav-item"><a class="nav-link" href="#projects">โครงการ</a></li>
           <li class="nav-item"><a class="nav-link" href="#features">ความสามารถ</a></li>
           <li class="nav-item"><a class="nav-link" href="#how">วิธีเข้าร่วม</a></li>
           <li class="nav-item"><a class="nav-link" href="#roles">ผู้ใช้งาน</a></li>
@@ -88,6 +89,27 @@
     </div>
     <svg class="hero-wave" viewBox="0 0 1440 80" preserveAspectRatio="none" aria-hidden="true"><path fill="currentColor" d="M0,40 C320,90 720,0 1080,30 C1260,45 1380,60 1440,55 L1440,80 L0,80 Z"></path></svg>
   </header>
+
+  <!-- Open projects -->
+  <section class="section pb-0" id="projects">
+    <div class="container">
+      <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+        <div>
+          <div class="eyebrow mb-2">โครงการล่าสุด</div>
+          <h2 class="section-title mb-0">โครงการฝึกอบรม</h2>
+        </div>
+        <select class="form-select" id="fySelect" style="max-width:260px" aria-label="ปีงบประมาณ"></select>
+      </div>
+      <div class="row g-4" id="projectGrid">
+        <div class="col-sm-6 col-xl-4"><div class="skeleton" style="height:340px;border-radius:18px"></div></div>
+        <div class="col-sm-6 col-xl-4"><div class="skeleton" style="height:340px;border-radius:18px"></div></div>
+        <div class="col-sm-6 col-xl-4 d-none d-xl-block"><div class="skeleton" style="height:340px;border-radius:18px"></div></div>
+      </div>
+      <div class="text-center mt-4 d-none" id="moreWrap">
+        <a href="user/projects.html" class="btn btn-outline-primary" id="moreBtn">ดูโครงการทั้งหมด <i class="bi bi-arrow-right"></i></a>
+      </div>
+    </div>
+  </section>
 
   <!-- Features -->
   <section class="section" id="features">
@@ -194,7 +216,29 @@
   <script src="assets/js/utils.js"></script>
   <script src="assets/js/api.js"></script>
   <script src="assets/js/auth.js"></script>
+  <script src="assets/js/projects.js"></script>
   <script>
+    (async () => {
+      const sel = document.getElementById('fySelect');
+      const grid = document.getElementById('projectGrid');
+      const load = async () => {
+        try {
+          const list = await API.call('project.list', { scope: 'public', fy_id: sel.value });
+          const sorted = list.sort((a, b) => (PUI.state(b).canJoin ? 1 : 0) - (PUI.state(a).canJoin ? 1 : 0));
+          grid.innerHTML = sorted.length ? sorted.slice(0, 6).map(p => PUI.card(p, '')).join('')
+            : `<div class="col-12"><div class="card"><div class="empty-state"><div class="icon soft-primary"><i class="bi bi-calendar2-week"></i></div>
+               <h5>ยังไม่มีโครงการในปีงบประมาณนี้</h5><p class="mb-0">โปรดติดตามโครงการใหม่เร็ว ๆ นี้</p></div></div></div>`;
+          document.getElementById('moreWrap').classList.toggle('d-none', sorted.length <= 6);
+        } catch (err) {
+          grid.innerHTML = `<div class="col-12"><div class="alert alert-warning mb-0">${UI.esc(err.message)}</div></div>`;
+        }
+      };
+      try { await PUI.fillFySelect(sel); } catch (e) { }
+      sel.addEventListener('change', load);
+      load();
+    })();
+    if (!Auth.getToken()) document.getElementById('moreBtn').href = 'login.html?next=' + encodeURIComponent(location.pathname.replace(/[^/]*$/, '') + 'user/projects.html');
+
     document.getElementById('year').textContent = new Date().getFullYear() + 543;
     document.getElementById('heroFy').textContent = UI.currentFY();
     UI.loadSettings().then(s => { if (s.site_name) document.title = s.site_name; });

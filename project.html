@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>รายละเอียดโครงการ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="assets/css/style.css" rel="stylesheet">
+  <script src="assets/js/theme.js"></script>
+</head>
+<body data-root="">
+  <nav class="public-nav">
+    <div class="container d-flex align-items-center gap-3 py-2">
+      <a href="index.html" class="d-flex align-items-center gap-2 text-decoration-none text-body min-w-0">
+        <span class="brand-logo" data-site-logo><i class="bi bi-mortarboard-fill"></i></span>
+        <span class="font-prompt fw-semibold text-truncate" data-site-name>ระบบฝึกอบรมออนไลน์</span>
+      </a>
+      <div class="ms-auto d-flex align-items-center gap-2" id="navRight">
+        <a href="login.html" class="btn btn-sm btn-soft" id="loginLink">เข้าสู่ระบบ</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container py-4">
+    <div id="loading"><div class="skeleton mb-4" style="aspect-ratio:16/6;border-radius:24px"></div><div class="skeleton" style="height:200px"></div></div>
+
+    <div id="notFound" class="d-none">
+      <div class="card"><div class="empty-state">
+        <div class="icon soft-danger"><i class="bi bi-folder-x"></i></div>
+        <h5>ไม่พบโครงการ</h5><p id="nfMsg">โครงการนี้อาจถูกลบหรือยังไม่เผยแพร่</p>
+        <a href="index.html" class="btn btn-primary">กลับหน้าแรก</a>
+      </div></div>
+    </div>
+
+    <div id="content" class="d-none">
+      <a href="#" id="backLink" class="small text-decoration-none d-inline-block mb-3"><i class="bi bi-arrow-left me-1"></i>ย้อนกลับ</a>
+      <div class="pj-banner mb-4 fade-up" id="banner"></div>
+
+      <div class="row g-4">
+        <div class="col-lg-8">
+          <div class="d-flex flex-wrap gap-2 mb-2" id="badges"></div>
+          <h1 class="h2 fw-bold mb-1" id="title"></h1>
+          <div class="text-muted mb-4" id="sub"></div>
+
+          <div class="card mb-3">
+            <div class="card-header"><i class="bi bi-file-text me-2 text-primary"></i>รายละเอียดโครงการ</div>
+            <div class="card-body prose" id="desc"></div>
+          </div>
+          <div class="card mb-3" id="objCard">
+            <div class="card-header"><i class="bi bi-bullseye me-2 text-primary"></i>วัตถุประสงค์</div>
+            <div class="card-body prose" id="obj"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><i class="bi bi-list-check me-2 text-primary"></i>กิจกรรมในโครงการ</div>
+            <div class="card-body">
+              <div class="empty-state py-4">
+                <div class="icon soft-primary"><i class="bi bi-calendar2-week"></i></div>
+                <h6>ยังไม่มีกิจกรรม</h6>
+                <p class="small mb-0">แบบทดสอบ แบบส่งงาน และเนื้อหาการเรียนรู้จะแสดงที่นี่ เมื่อผู้รับผิดชอบเพิ่มกิจกรรม</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-4">
+          <div class="position-sticky" style="top:80px">
+            <div class="card mb-3">
+              <div class="card-body" id="actionBox"></div>
+            </div>
+            <div class="card">
+              <div class="card-body py-2" id="info"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/mock.js"></script>
+  <script src="assets/js/utils.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/projects.js"></script>
+  <script>
+    const id = UI.qs('id');
+    const me = Auth.getToken() ? Auth.getUser() : null;
+    let p = null;
+
+    UI.loadSettings();
+    if (me) {
+      UI.$('#navRight').innerHTML = `<a href="${Auth.home(me.role)}" class="btn btn-sm btn-soft"><i class="bi bi-grid-1x2 me-1"></i><span class="d-none d-sm-inline">แดชบอร์ด</span></a>
+        <span class="avatar" title="${UI.esc(UI.fullName(me))}">${UI.esc(UI.initials(me))}</span>`;
+    } else {
+      UI.$('#loginLink').href = 'login.html?next=' + encodeURIComponent(location.pathname + location.search);
+    }
+    UI.$('#backLink').addEventListener('click', e => {
+      e.preventDefault();
+      if (history.length > 1 && document.referrer) history.back();
+      else location.href = me ? Auth.home(me.role) : 'index.html';
+    });
+
+    load();
+
+    async function load() {
+      if (!id) return showNotFound('ลิงก์ไม่ถูกต้อง');
+      try {
+        p = await API.call('project.get', { project_id: id });
+        render();
+      } catch (err) { showNotFound(err.message); }
+    }
+
+    function showNotFound(msg) {
+      UI.$('#loading').classList.add('d-none');
+      UI.$('#nfMsg').textContent = msg;
+      UI.$('#notFound').classList.remove('d-none');
+    }
+
+    function infoRow(icon, cls, label, value) {
+      return `<div class="info-row"><span class="ii ${cls}"><i class="bi bi-${icon}"></i></span><div class="min-w-0"><div class="il">${label}</div><div class="iv">${value}</div></div></div>`;
+    }
+
+    function render() {
+      document.title = p.title;
+      UI.$('#banner').innerHTML = PUI.cover(p);
+      UI.$('#badges').innerHTML = (p.status === 'draft' ? PUI.statusBadge('draft') : PUI.stateBadge(p)) + PUI.enrollBadge(p.my_status);
+      UI.$('#title').textContent = p.title;
+      UI.$('#sub').innerHTML = `<i class="bi bi-hash"></i>${UI.esc(p.code)} · ปีงบประมาณ ${UI.esc(p.fy_year)}`;
+      UI.$('#desc').textContent = p.description || 'ไม่มีรายละเอียด';
+      UI.$('#obj').textContent = p.objectives || '';
+      UI.$('#objCard').classList.toggle('d-none', !p.objectives);
+
+      const cap = parseInt(p.capacity, 10);
+      UI.$('#info').innerHTML =
+        infoRow('calendar-event', 'soft-primary', 'ช่วงเวลาอบรม', PUI.dateRange(p.start_date, p.end_date)) +
+        infoRow('person-plus', 'soft-success', 'ช่วงรับสมัคร', p.reg_open || p.reg_close ? PUI.dateRange(p.reg_open, p.reg_close) : 'เปิดรับตลอด') +
+        infoRow(PUI.formatIcon(p.format), 'soft-info', 'รูปแบบ', UI.esc(PUI.formatLabel(p.format))) +
+        (p.location ? infoRow('geo-alt', 'soft-pink', 'สถานที่', UI.esc(p.location)) : '') +
+        (p.hours ? infoRow('clock', 'soft-warning', 'จำนวนชั่วโมง', UI.esc(p.hours) + ' ชั่วโมง') : '') +
+        infoRow('people', 'soft-purple', 'จำนวนที่รับ', cap ? `${cap} คน (ลงทะเบียนแล้ว ${p.enrolled})` : `ไม่จำกัด (ลงทะเบียนแล้ว ${p.enrolled})`) +
+        infoRow('award', 'soft-success', 'เกณฑ์ผ่าน', `ทำกิจกรรมครบ ${UI.esc(p.pass_criteria || 80)}%`) +
+        infoRow('person-badge', 'soft-primary', 'ผู้รับผิดชอบ', UI.esc(p.owner_name || '-'));
+
+      renderAction();
+      UI.$('#loading').classList.add('d-none');
+      UI.$('#content').classList.remove('d-none');
+    }
+
+    function renderAction() {
+      const st = PUI.state(p);
+      const box = UI.$('#actionBox');
+      let html = `<div class="mb-3">${PUI.seatBar(p)}</div>`;
+      const nextUrl = encodeURIComponent(location.pathname + location.search);
+
+      if (p.can_edit) {
+        html += `<div class="alert alert-info small py-2"><i class="bi bi-info-circle me-1"></i>คุณเป็นผู้จัดการโครงการนี้</div>
+          <a href="creator/project-edit.html?id=${p.project_id}" class="btn btn-primary w-100 mb-2"><i class="bi bi-pencil me-1"></i>แก้ไขโครงการ</a>
+          <a href="creator/participants.html?id=${p.project_id}" class="btn btn-soft w-100"><i class="bi bi-people me-1"></i>ผู้เข้าร่วม ${p.pending ? `<span class="badge-soft warning ms-1">รออนุมัติ ${p.pending}</span>` : ''}</a>`;
+      } else if (p.my_status) {
+        const msg = {
+          pending: ['hourglass-split', 'warning', 'รอการอนุมัติ', 'ผู้รับผิดชอบจะพิจารณาการลงทะเบียนของคุณ'],
+          approved: ['check-circle-fill', 'success', 'ลงทะเบียนเรียบร้อย', 'คุณสามารถทำกิจกรรมได้เมื่อโครงการเริ่ม'],
+          rejected: ['x-circle-fill', 'danger', 'ไม่ผ่านการพิจารณา', 'ขออภัย คุณไม่ได้รับการอนุมัติในโครงการนี้'],
+          completed: ['award-fill', 'primary', 'ผ่านการอบรมแล้ว', 'ยินดีด้วย!']
+        }[p.my_status];
+        html += `<div class="text-center mb-3"><div class="status-icon soft-${msg[1]}" style="width:64px;height:64px;font-size:1.8rem;margin-bottom:.75rem"><i class="bi bi-${msg[0]}"></i></div>
+          <div class="fw-semibold font-prompt">${msg[2]}</div><div class="small text-muted">${msg[3]}</div></div>`;
+        if (p.my_status === 'pending' || p.my_status === 'approved') {
+          html += `<button class="btn btn-light w-100 text-danger" id="cancelBtn"><i class="bi bi-x-circle me-1"></i>ยกเลิกการลงทะเบียน</button>`;
+        }
+      } else if (!me) {
+        html += st.canJoin
+          ? `<a href="login.html?next=${nextUrl}" class="btn btn-primary btn-lg w-100"><i class="bi bi-box-arrow-in-right me-1"></i>เข้าสู่ระบบเพื่อลงทะเบียน</a>
+             <p class="small text-muted text-center mt-2 mb-0">ยังไม่มีบัญชี? <a href="register.html">สมัครสมาชิก</a></p>`
+          : `<button class="btn btn-secondary btn-lg w-100" disabled>${UI.esc(st.label)}</button>`;
+      } else {
+        html += st.canJoin
+          ? `<button class="btn btn-primary btn-lg w-100" id="joinBtn"><i class="bi bi-person-plus me-1"></i>ลงทะเบียนเข้าร่วม</button>
+             <p class="small text-muted text-center mt-2 mb-0">${p.enroll_mode === 'approval' ? 'ต้องรอผู้รับผิดชอบอนุมัติ' : 'เข้าร่วมได้ทันทีหลังลงทะเบียน'}</p>`
+          : `<button class="btn btn-secondary btn-lg w-100" disabled>${UI.esc(st.label)}</button>`;
+      }
+      html += `<button class="btn btn-link w-100 mt-2 small text-decoration-none" id="shareBtn"><i class="bi bi-share me-1"></i>คัดลอกลิงก์โครงการ</button>`;
+      box.innerHTML = html;
+
+      UI.$('#joinBtn')?.addEventListener('click', join);
+      UI.$('#cancelBtn')?.addEventListener('click', cancel);
+      UI.$('#shareBtn').addEventListener('click', async () => {
+        try { await navigator.clipboard.writeText(location.href); UI.toast('คัดลอกลิงก์แล้ว'); }
+        catch (e) { prompt('คัดลอกลิงก์นี้', location.href); }
+      });
+    }
+
+    async function join(e) {
+      if (!(await UI.confirm('ลงทะเบียนเข้าร่วมโครงการ?', p.title, 'ลงทะเบียน', 'question'))) return;
+      const btn = e.currentTarget;
+      UI.btnLoading(btn, true, 'กำลังลงทะเบียน...');
+      try {
+        const r = await API.call('enroll.join', { project_id: p.project_id });
+        await UI.success(r.status === 'pending' ? 'ส่งคำขอลงทะเบียนแล้ว' : 'ลงทะเบียนสำเร็จ',
+          r.status === 'pending' ? 'กรุณารอผู้รับผิดชอบอนุมัติ' : 'คุณเข้าร่วมโครงการนี้เรียบร้อยแล้ว');
+        load();
+      } catch (err) { UI.btnLoading(btn, false); UI.error(err, 'ลงทะเบียนไม่สำเร็จ'); }
+    }
+
+    async function cancel() {
+      if (!(await UI.confirm('ยกเลิกการลงทะเบียน?', 'หากต้องการเข้าร่วมอีกครั้งต้องลงทะเบียนใหม่', 'ยกเลิกการลงทะเบียน'))) return;
+      try {
+        await API.call('enroll.cancel', { enroll_id: p.my_enroll_id });
+        UI.toast('ยกเลิกการลงทะเบียนแล้ว');
+        load();
+      } catch (err) { UI.error(err); }
+    }
+  </script>
+</body>
+</html>
